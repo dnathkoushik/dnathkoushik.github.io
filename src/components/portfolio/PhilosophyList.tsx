@@ -1,18 +1,29 @@
+import type { CSSProperties } from 'react'
 import { philosophy } from '@/data'
-import { Card } from '@/components/ui/Card'
+import { Parallax, Reveal, TextReveal } from '@/motion'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { Icon } from '@/components/ui/Icon'
 import { cn } from '@/lib/cn'
 
 export interface PhilosophyListProps {
   className?: string
 }
 
+/*
+ * Hollow numerals. `-webkit-text-fill-color` rather than `color: transparent`,
+ * so the stroke — which reads `currentColor` — keeps the token colour.
+ */
+const OUTLINE: CSSProperties = {
+  WebkitTextStroke: '1px currentColor',
+  WebkitTextFillColor: 'transparent',
+}
+
 /**
  * How I work, in three short notes.
  *
- * Rendered as a plain list so the caller owns the surrounding `<section>` and
- * its heading — that keeps the page's heading outline in one place instead of
+ * Three wide editorial rows: a big outlined index that drifts slower than the
+ * page, a display-size title and the note revealed line by line. Rendered as
+ * an ordered list so the caller owns the surrounding `<section>` and its
+ * heading — that keeps the page's heading outline in one place instead of
  * splitting it across a component boundary.
  */
 export function PhilosophyList({ className }: PhilosophyListProps) {
@@ -28,30 +39,42 @@ export function PhilosophyList({ className }: PhilosophyListProps) {
   }
 
   return (
-    <ul className={cn('grid gap-4 sm:grid-cols-2 lg:grid-cols-3', className)}>
+    <ol className={cn('divide-y divide-line border-y border-line', className)}>
       {philosophy.map((note, index) => (
-        <li key={note.title} className="flex">
-          <Card className="w-full animate-rise p-5">
-            <div className="flex items-center gap-2.5">
-              <span
-                aria-hidden="true"
-                className="grid size-7 shrink-0 place-items-center rounded-md bg-surface-muted text-ink-faint"
-              >
-                <Icon name="Quote" size={14} />
-              </span>
-              <span className="font-mono text-[11px] tracking-[0.14em] text-ink-faint uppercase tabular-nums">
-                {String(index + 1).padStart(2, '0')}
-              </span>
-            </div>
+        <li key={note.title} className="grid gap-6 py-10 sm:py-14 lg:grid-cols-12 lg:gap-10">
+          <div className="lg:col-span-3">
+            <Parallax speed={0.25}>
+              <Reveal y={16}>
+                <span
+                  aria-hidden="true"
+                  style={OUTLINE}
+                  className="block font-display text-[clamp(3.5rem,8vw,7rem)] leading-none font-medium text-line-strong select-none"
+                >
+                  {String(index + 1).padStart(2, '0')}
+                </span>
+              </Reveal>
+            </Parallax>
+          </div>
 
-            <h3 className="mt-4 text-base font-semibold tracking-tight text-balance text-ink">
+          <div className="min-w-0 lg:col-span-9 lg:max-w-[64ch]">
+            <TextReveal
+              as="h3"
+              className="font-display text-[clamp(1.5rem,3vw,2.25rem)] leading-[1.05] tracking-tight text-ink"
+            >
               {note.title}
-            </h3>
+            </TextReveal>
 
-            <p className="mt-2 text-[15px] leading-relaxed text-ink-muted">{note.body}</p>
-          </Card>
+            <TextReveal
+              as="p"
+              type="lines"
+              delay={0.15}
+              className="mt-5 text-[17px] leading-[1.6] text-ink-muted"
+            >
+              {note.body}
+            </TextReveal>
+          </div>
         </li>
       ))}
-    </ul>
+    </ol>
   )
 }

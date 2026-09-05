@@ -20,6 +20,7 @@ The two halves share a design system and a search bar, but nothing else. The pub
 - [Updating your portfolio content](#updating-your-portfolio-content)
 - [How the personal dashboard works](#how-the-personal-dashboard-works)
 - [Privacy: what is and is not private](#privacy-what-is-and-is-not-private)
+- [The motion layer (public site only)](#the-motion-layer-public-site-only)
 - [GitHub sync — the dashboard commits itself](#github-sync--the-dashboard-commits-itself)
 - [Deploying to GitHub Pages](#deploying-to-github-pages)
 - [Environment variables](#environment-variables)
@@ -80,6 +81,8 @@ The two halves share a design system and a search bar, but nothing else. The pub
 | Build | Vite 8 | Fast dev server, tiny production output, first-class GitHub Pages support |
 | Styling | Tailwind CSS v4 | CSS-first `@theme` tokens — no `tailwind.config.js` to keep in sync |
 | Routing | React Router 7 | Nested layouts map exactly onto public vs private |
+| Motion | GSAP 3 (ScrollTrigger, SplitText, ScrambleText) + Lenis | Scroll-driven choreography and smooth scroll on the public site only; the dashboard does not load either |
+| Hero | hand-written WebGL2 shader | Domain-warped noise in the accent colours, mouse-reactive, no library, CSS fallback |
 | Icons | lucide-react | Consistent stroke weight; brand marks are hand-inlined SVG |
 | Charts | Recharts | Only loaded inside the lazily-imported dashboard |
 | Dates | date-fns | Local-date correctness, tree-shakeable |
@@ -137,6 +140,8 @@ The first time you open `/dashboard` you will be offered a **sample dataset** so
 │   ├── hooks/                     Reusable hooks + private-data selectors
 │   ├── layouts/                   PublicLayout and PersonalLayout
 │   ├── lib/cn.ts                  Class-name merge helper
+│   ├── motion/                    Public-site motion layer (GSAP setup, smooth scroll, cursor,
+│   │                              preloader, page transitions, WebGL hero, reveal primitives)
 │   ├── pages/
 │   │   ├── public/                One file per public page
 │   │   └── personal/              One file per dashboard page
@@ -266,6 +271,48 @@ Be clear about what this is: it is **not** authentication, and it is not what ke
 To keep search engines out of the dashboard, `robots.txt` disallows `/dashboard` and every dashboard page sets `<meta name="robots" content="noindex, nofollow">`. That stops indexing; it is not a security boundary.
 
 **Never commit** API keys, tokens, passwords or personal notes. Anything prefixed `VITE_` is inlined into the public bundle by design.
+
+---
+
+## The motion layer (public site only)
+
+The portfolio is built as a scroll-driven, cinematic site: a WebGL hero, a custom cursor, Lenis smooth scrolling, SplitText line-mask reveals, pinned horizontal and sticky-stack sections, a preloader and curtain page transitions. All of it lives in `src/motion/` and is only ever imported by `PublicLayout` and the public pages — **the dashboard bundle contains none of it**.
+
+Two rules keep it from becoming a mess:
+
+1. **Everything imports GSAP from `src/motion/gsap.ts`**, never from `gsap` directly. That file registers the plugins once, sets the house easing (`'house'`), and exposes `motionOK()`, `finePointer()` and `isDesktop()` — the three questions every component asks before it moves anything.
+2. **Motion is a layer, not the content.** Every headline, paragraph and card is real, styled markup that is fully present without JavaScript; animations reveal it. So the site is complete with motion off, in a text browser, and in the jsdom smoke test.
+
+### Reduced motion, touch and mobile
+
+- `prefers-reduced-motion: reduce` → no smooth scroll, no cursor, no preloader, no scramble, no pinned sections; every reveal renders its final state immediately. The site is calm and fully usable.
+- Touch / coarse pointer → no custom cursor, no magnetic buttons, no 3-D tilt (there is no hover to follow).
+- Below `lg` → no pinned sections; the horizontal project rail becomes a native scroll-snap row and the sticky stack becomes a plain stack.
+
+### The primitives
+
+| Component | Use |
+| --- | --- |
+| `TextReveal` | SplitText masked reveal by lines / words / chars |
+| `Reveal`, `Stagger` | Fade-up or clip-path wipe on enter; sequenced children |
+| `Counter` | Counts a number up on enter (final value is always in the markup) |
+| `Magnetic`, `TiltCard` | Pointer-following hover for buttons and cards |
+| `Marquee` | Seamless loop; static wrapped row under reduced motion |
+| `Parallax`, `SectionNumber` | Scrubbed drift; outlined section numerals |
+| `StickyStack`, `HorizontalScroll` | Pinned scroll sections, desktop + motion only |
+| `HeroCanvas` | The WebGL shader; falls back to CSS gradients |
+| `SmoothScrollProvider`, `Cursor`, `Preloader`, `PageTransition`, `Grain`, `ScrollProgress` | Site-wide chrome, composed in `PublicLayout` |
+
+Adding a new animated section is: write the plain markup, then wrap headings in `TextReveal` and groups in `Stagger`. If it looks right with motion off, it is done.
+
+### Performance
+
+GSAP core + ScrollTrigger + SplitText + ScrambleText adds roughly 75 kB gzipped to the public bundle; Lenis ~4 kB; the shader is hand-written and dependency-free. Everything animates transform, opacity or clip-path only. The canvas caps device-pixel-ratio at 1.5, pauses when off-screen or in a hidden tab, and drops to DPR 1 on phones.
+
+### Two WebGL gotchas the hero is built around
+
+- **A canvas hands back the same context object to every `getContext()` call.** If an effect calls `WEBGL_lose_context.loseContext()` in its cleanup and then re-runs on the same element — React StrictMode in dev, hot reload — the next mount inherits a dead context. Chrome composites a lost-context canvas as *opaque white*, straight over the hero text. So the cleanup releases the program and VAO but never loses the context.
+- **A genuinely lost context (GPU reset, mobile Safari backgrounding) is hidden immediately**, giving the browser three seconds to restore it before the hero switches permanently to its CSS-gradient fallback. It never shows white.
 
 ---
 

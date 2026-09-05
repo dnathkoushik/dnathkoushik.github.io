@@ -20,12 +20,12 @@ import { cn } from '@/lib/cn'
  * re-created on every keystroke and the glyph keeps a stable identity.
  */
 const BRAND_GLYPH: Record<string, ReactNode> = {
-  github: <GithubIcon className="size-[18px]" />,
-  linkedin: <LinkedinIcon className="size-[18px]" />,
-  x: <XIcon className="size-[18px]" />,
-  twitter: <XIcon className="size-[18px]" />,
-  leetcode: <LeetcodeIcon className="size-[18px]" />,
-  codeforces: <CodeforcesIcon className="size-[18px]" />,
+  github: <GithubIcon className="size-5" />,
+  linkedin: <LinkedinIcon className="size-5" />,
+  x: <XIcon className="size-5" />,
+  twitter: <XIcon className="size-5" />,
+  leetcode: <LeetcodeIcon className="size-5" />,
+  codeforces: <CodeforcesIcon className="size-5" />,
 }
 
 /** Lucide fallbacks for ids that have no brand mark. */
@@ -53,7 +53,9 @@ export interface ContactCardProps {
  *
  * The label is the link and its `::after` covers the card, so the whole tile is
  * clickable while the copy button — which is a different action entirely — sits
- * above it on its own layer and gets its own focus stop.
+ * above it on its own layer and gets its own focus stop. The brand mark turns a
+ * few degrees and the arrow steps toward the corner on hover; with motion off
+ * the border, the underline colour and the arrow itself still say "this opens".
  *
  * `navigator.clipboard` is unavailable on an insecure origin and can be refused
  * outright by the browser, so the failure path is real rather than a silent
@@ -94,7 +96,8 @@ export function ContactCard({ link, copyValue, className }: ContactCardProps) {
       selectHandle()
       toast({
         title: 'Copy it by hand',
-        description: 'The browser refused clipboard access, so the address is selected — press Ctrl or Cmd + C.',
+        description:
+          'The browser refused clipboard access, so the address is selected — press Ctrl or Cmd + C.',
         tone: 'warning',
         duration: 7000,
       })
@@ -102,31 +105,45 @@ export function ContactCard({ link, copyValue, className }: ContactCardProps) {
   }, [copyValue, selectHandle, toast])
 
   const key = link.id.trim().toLowerCase()
-  const glyph = BRAND_GLYPH[key] ?? <Icon name={FALLBACK_ICON[key] ?? 'Link'} size={18} />
+  const glyph = BRAND_GLYPH[key] ?? <Icon name={FALLBACK_ICON[key] ?? 'Link'} size={20} />
   const external = /^https?:/i.test(link.href)
 
   return (
-    <Card interactive className={cn('relative isolate h-full', className)}>
-      <CardContent className="flex items-center gap-3.5 py-4">
+    <Card
+      interactive
+      data-cursor="Open"
+      className={cn('group relative isolate h-full hover:border-line-strong', className)}
+    >
+      <CardContent className="flex items-center gap-4 py-5 sm:px-6 sm:py-6">
         <span
           aria-hidden="true"
-          className="grid size-10 shrink-0 place-items-center rounded-lg bg-surface-muted text-ink-muted"
+          className={cn(
+            'grid size-12 shrink-0 place-items-center rounded-xl border border-line bg-surface-muted text-ink',
+            'transition-transform duration-300 ease-out group-hover:rotate-[8deg] group-hover:border-line-strong',
+          )}
         >
           {glyph}
         </span>
 
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-ink">
+          <p className="font-display text-xl leading-none font-medium tracking-tight text-ink sm:text-2xl">
             <a
               href={link.href}
               {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-              className="after:absolute after:inset-0 after:z-0 after:content-['']"
+              className={cn(
+                'after:absolute after:inset-0 after:z-0 after:content-[""]',
+                'underline decoration-line decoration-1 underline-offset-[6px] transition-colors duration-200',
+                'group-hover:decoration-line-strong',
+              )}
             >
               {link.label}
               {external ? <span className="sr-only"> (opens in a new tab)</span> : null}
             </a>
           </p>
-          <p ref={handleRef} className="truncate font-mono text-xs text-ink-faint">
+          <p
+            ref={handleRef}
+            className="mt-2.5 truncate font-mono text-xs tracking-[0.06em] text-ink-faint"
+          >
             {link.handle}
           </p>
         </div>
@@ -136,6 +153,7 @@ export function ContactCard({ link, copyValue, className }: ContactCardProps) {
             variant="ghost"
             size="icon"
             className="relative z-10"
+            data-cursor="Copy"
             icon={copied ? 'Check' : 'Copy'}
             aria-label={`Copy ${copyValue} to the clipboard`}
             onClick={() => {
@@ -143,7 +161,16 @@ export function ContactCard({ link, copyValue, className }: ContactCardProps) {
             }}
           />
         ) : (
-          <Icon name="ArrowUpRight" size={15} className="text-ink-faint" />
+          <span
+            aria-hidden="true"
+            className={cn(
+              'grid size-9 shrink-0 place-items-center rounded-full border border-line text-ink-faint',
+              'transition-[transform,color,border-color] duration-300 ease-out',
+              'group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:border-line-strong group-hover:text-ink',
+            )}
+          >
+            <Icon name="ArrowUpRight" size={16} />
+          </span>
         )}
       </CardContent>
     </Card>

@@ -1,22 +1,16 @@
-import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import type { Experience, Project, Tone } from '@/types'
+import type { Experience, Project } from '@/types'
 import { PUBLIC_ROUTES } from '@/config/routes'
-import { education, experience, projects, skillCategories } from '@/data'
+import { experience, projects } from '@/data'
 import { Badge } from '@/components/ui/Badge'
 import { ButtonLink } from '@/components/ui/Button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Icon } from '@/components/ui/Icon'
-import { SectionHeading } from '@/components/ui/SectionHeading'
+import { PROJECT_STATUS, ProjectCover } from '@/components/projects/ProjectCard'
+import { Magnetic, Parallax, Reveal, SectionNumber, Stagger, TextReveal, TiltCard } from '@/motion'
 import { yearMonthRangeLabel } from '@/utils/date'
 import { truncate } from '@/utils/format'
-
-const PROJECT_STATUS: Record<Project['status'], { label: string; tone: Tone; icon: string }> = {
-  shipped: { label: 'Shipped', tone: 'positive', icon: 'CircleCheckBig' },
-  'in-progress': { label: 'In progress', tone: 'accent', icon: 'CircleDashed' },
-  archived: { label: 'Archived', tone: 'neutral', icon: 'Archive' },
-}
+import { cn } from '@/lib/cn'
 
 const ROLE_TYPE: Record<Experience['type'], string> = {
   internship: 'Internship',
@@ -26,310 +20,242 @@ const ROLE_TYPE: Record<Experience['type'], string> = {
   'open-source': 'Open source',
 }
 
-const SEPARATOR = '  ·  '
-
-interface HighlightProps {
-  id: string
-  eyebrow: string
-  title: string
-  description: string
-  seeAllTo: string
-  seeAllLabel: string
-  children: ReactNode
+/**
+ * Deep link into /projects. The projects page reads `?project=<id>` and opens
+ * that project's dialog; an unknown id simply shows the full list.
+ */
+function projectHref(project: Project): string {
+  return `${PUBLIC_ROUTES.projects}?project=${encodeURIComponent(project.id)}`
 }
 
-/** A titled block with a "see all" escape hatch to the page that owns it. */
-function Highlight({
-  id,
-  eyebrow,
-  title,
-  description,
-  seeAllTo,
-  seeAllLabel,
-  children,
-}: HighlightProps) {
-  return (
-    <section aria-labelledby={id} className="animate-rise">
-      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
-        <SectionHeading
-          id={id}
-          eyebrow={eyebrow}
-          title={title}
-          description={description}
-          className="min-w-0 flex-1"
-        />
-        <ButtonLink to={seeAllTo} variant="ghost" size="sm" iconRight="ArrowRight">
-          {seeAllLabel}
-        </ButtonLink>
-      </div>
-
-      <div className="mt-6">{children}</div>
-    </section>
-  )
-}
-
-function ProjectHighlights() {
+/** The three featured projects — or the three newest, when none is flagged. */
+function featuredProjects(): Project[] {
   const featured = projects.filter((project) => project.featured)
-  const shown = (featured.length > 0 ? featured : projects).slice(0, 3)
-
-  if (shown.length === 0) {
-    return (
-      <EmptyState
-        icon="FolderGit2"
-        title="No projects listed yet"
-        description="Projects live in src/data/projects.ts and show up here the moment there is one."
-      />
-    )
-  }
-
-  return (
-    <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {shown.map((project) => {
-        const status = PROJECT_STATUS[project.status]
-        const extra = project.technologies.length - 4
-
-        return (
-          <li key={project.id} className="flex">
-            <Card interactive className="w-full">
-              <CardHeader
-                actions={
-                  <Badge tone={status.tone} size="sm" icon={status.icon}>
-                    {status.label}
-                  </Badge>
-                }
-              >
-                <CardTitle as="h3" className="text-base">
-                  {/* Stretched link: one focus stop, whole card clickable. */}
-                  <Link
-                    to={PUBLIC_ROUTES.projects}
-                    className="rounded-sm outline-accent after:absolute after:inset-0 focus-visible:outline-2 focus-visible:outline-offset-2"
-                  >
-                    {project.name}
-                  </Link>
-                </CardTitle>
-                <CardDescription>{project.summary}</CardDescription>
-              </CardHeader>
-
-              <CardContent className="mt-auto">
-                <ul className="flex flex-wrap gap-1.5">
-                  {project.technologies.slice(0, 4).map((tech) => (
-                    <li key={tech}>
-                      <Badge size="sm" className="font-mono">
-                        {tech}
-                      </Badge>
-                    </li>
-                  ))}
-                  {extra > 0 ? (
-                    <li>
-                      <Badge size="sm" className="font-mono">
-                        +{extra} more
-                      </Badge>
-                    </li>
-                  ) : null}
-                </ul>
-              </CardContent>
-            </Card>
-          </li>
-        )
-      })}
-    </ul>
-  )
+  return (featured.length > 0 ? featured : projects).slice(0, 3)
 }
 
-function namesAtLevel(level: 'strong' | 'working'): string[] {
-  return skillCategories.flatMap((category) =>
-    category.skills.filter((skill) => skill.level === level).map((skill) => skill.name),
-  )
-}
-
-function SkillHighlights() {
-  const groups = [
-    { label: 'Reach for by default', tone: 'accent' as Tone, names: namesAtLevel('strong') },
-    {
-      label: 'Comfortable building with',
-      tone: 'neutral' as Tone,
-      names: namesAtLevel('working').slice(0, 8),
-    },
-  ].filter((group) => group.names.length > 0)
-
-  if (groups.length === 0) {
-    return (
-      <EmptyState
-        icon="Layers"
-        title="No skills listed yet"
-        description="Categories and honest proficiency levels live in src/data/skills.ts."
-      />
-    )
-  }
-
-  return (
-    <Card>
-      <CardContent className="pt-5">
-        <dl className="space-y-5">
-          {groups.map((group) => (
-            <div key={group.label}>
-              <dt className="font-mono text-[11px] font-medium tracking-[0.14em] text-ink-faint uppercase">
-                {group.label}
-              </dt>
-              <dd className="mt-2.5">
-                <ul className="flex flex-wrap gap-1.5">
-                  {group.names.map((name) => (
-                    <li key={name}>
-                      <Badge tone={group.tone}>{name}</Badge>
-                    </li>
-                  ))}
-                </ul>
-              </dd>
-            </div>
-          ))}
-        </dl>
-      </CardContent>
-    </Card>
-  )
-}
-
-interface LatestEntry {
-  icon: string
-  title: string
-  subtitle: string
-  meta: string
-  description: string
-  tags: string[]
-  eyebrow: string
-  heading: string
-  blurb: string
-  seeAllTo: string
-  seeAllLabel: string
-}
-
-/** The newest role — or the newest degree, when there is no role yet. */
-function latestEntry(): LatestEntry | null {
-  const role = experience[0]
-  if (role) {
-    return {
-      icon: 'Briefcase',
-      title: role.position,
-      subtitle: role.company,
-      meta: [yearMonthRangeLabel(role.startDate, role.endDate), role.location, ROLE_TYPE[role.type]]
-        .filter(Boolean)
-        .join(SEPARATOR),
-      description: truncate(role.description, 240),
-      tags: role.technologies,
-      eyebrow: 'Experience',
-      heading: 'Most recent role',
-      blurb:
-        'The newest entry on the timeline. What I actually did in each role is on the experience page.',
-      seeAllTo: PUBLIC_ROUTES.experience,
-      seeAllLabel: 'All experience',
-    }
-  }
-
-  const school = education[0]
-  if (school) {
-    return {
-      icon: 'GraduationCap',
-      title: school.institution,
-      subtitle: [school.degree, school.field].filter(Boolean).join(SEPARATOR),
-      meta: [yearMonthRangeLabel(school.startDate, school.endDate), school.location, school.score]
-        .filter(Boolean)
-        .join(SEPARATOR),
-      description: truncate(school.highlights[0] ?? '', 240),
-      tags: school.coursework ?? [],
-      eyebrow: 'Education',
-      heading: 'Where I am studying',
-      blurb: 'The current degree. Coursework and the rest of the background sit on the about page.',
-      seeAllTo: PUBLIC_ROUTES.about,
-      seeAllLabel: 'More about me',
-    }
-  }
-
-  return null
+interface FeatureCardProps {
+  project: Project
+  /** The first card: spans seven columns and two rows, gets the bigger type and a taller cover. */
+  lead: boolean
 }
 
 /**
- * The reasons to keep scrolling past the hero: what I have shipped, what I
- * build with, and where I have been most recently.
- *
- * Every block links onward to the page that owns it, and every block either
- * degrades to an empty state or removes itself when its data file is empty —
- * nothing here invents content it does not have.
+ * One featured project. A tilting card whose whole face is a single link —
+ * the name carries the accessible label and a stretched pseudo-element makes
+ * the rest of the card clickable. The border and the arrow are what mark it
+ * as interactive when motion is off.
  */
-export function HomeHighlights() {
-  const latest = latestEntry()
+function FeatureCard({ project, lead }: FeatureCardProps) {
+  const status = PROJECT_STATUS[project.status]
+  const visibleTech = project.technologies.slice(0, lead ? 5 : 3)
+  const hiddenTech = project.technologies.length - visibleTech.length
 
   return (
-    <div className="space-y-14 sm:space-y-20">
-      <Highlight
-        id="highlight-projects"
-        eyebrow="Selected work"
-        title="Projects I learned the most from"
-        description="Each of these forced me to understand something I had been treating as magic."
-        seeAllTo={PUBLIC_ROUTES.projects}
-        seeAllLabel="All projects"
+    <TiltCard
+      max={5}
+      className={cn('h-full rounded-card', lead ? 'lg:col-span-7 lg:row-span-2' : 'lg:col-span-5')}
+    >
+      <article
+        data-cursor="View"
+        className={cn(
+          'group relative isolate flex h-full min-w-0 flex-col overflow-hidden rounded-card border border-line bg-surface',
+          'transition-colors duration-200 hover:border-line-strong focus-within:border-accent',
+        )}
       >
-        <ProjectHighlights />
-      </Highlight>
+        <Reveal clip="up" className="overflow-hidden">
+          <ProjectCover
+            project={project}
+            eager={lead}
+            className={cn(lead && 'lg:aspect-[4/3]')}
+          />
+        </Reveal>
 
-      <Highlight
-        id="highlight-skills"
-        eyebrow="Toolkit"
-        title="What I work with"
-        description="Grouped by how well I know it, not by how long the list can be made to look."
-        seeAllTo={PUBLIC_ROUTES.skills}
-        seeAllLabel="All skills"
-      >
-        <SkillHighlights />
-      </Highlight>
+        <div className="flex flex-1 flex-col gap-4 p-6 sm:p-7">
+          <div className="flex items-start justify-between gap-4">
+            <h3
+              className={cn(
+                'min-w-0 font-display leading-[1.05] font-semibold tracking-tight text-ink',
+                lead ? 'text-[clamp(1.75rem,3vw,2.75rem)]' : 'text-[clamp(1.5rem,2.2vw,2rem)]',
+              )}
+            >
+              <Link
+                to={projectHref(project)}
+                className="break-words rounded-sm outline-accent after:absolute after:inset-0 after:z-0 after:content-[''] focus-visible:outline-2 focus-visible:outline-offset-2"
+              >
+                {project.name}
+              </Link>
+            </h3>
+            <Icon
+              name="ArrowUpRight"
+              size={22}
+              className="mt-1 shrink-0 text-ink-faint transition-[transform,color] duration-300 group-hover:translate-x-1 group-hover:-translate-y-1 group-hover:text-ink"
+            />
+          </div>
 
-      {latest ? (
-        <Highlight
-          id="highlight-latest"
-          eyebrow={latest.eyebrow}
-          title={latest.heading}
-          description={latest.blurb}
-          seeAllTo={latest.seeAllTo}
-          seeAllLabel={latest.seeAllLabel}
-        >
-          <Card>
-            <CardContent className="pt-5">
-              <div className="flex items-start gap-4">
-                <span
-                  aria-hidden="true"
-                  className="grid size-10 shrink-0 place-items-center rounded-lg bg-surface-muted text-ink-muted"
-                >
-                  <Icon name={latest.icon} size={18} />
-                </span>
+          <p
+            className={cn(
+              'leading-relaxed text-ink-muted',
+              lead ? 'max-w-[56ch] text-base' : 'text-[15px]',
+            )}
+          >
+            {project.summary}
+          </p>
 
-                <div className="min-w-0">
-                  <h3 className="text-base font-semibold tracking-tight text-ink">{latest.title}</h3>
-                  <p className="mt-0.5 text-sm font-medium text-ink-muted">{latest.subtitle}</p>
-                  <p className="mt-1.5 font-mono text-xs text-ink-faint tabular-nums">
-                    {latest.meta}
-                  </p>
+          <div className="mt-auto flex flex-wrap items-center gap-2 pt-2">
+            <Badge tone={status.tone} size="sm" icon={status.icon}>
+              {status.label}
+            </Badge>
+            <ul className="flex flex-wrap gap-1.5" aria-label={`Technologies used in ${project.name}`}>
+              {visibleTech.map((tech) => (
+                <li key={tech}>
+                  <Badge size="sm" className="font-mono">
+                    {tech}
+                  </Badge>
+                </li>
+              ))}
+              {hiddenTech > 0 ? (
+                <li>
+                  <Badge size="sm" className="font-mono">
+                    +{hiddenTech}
+                    <span className="sr-only">
+                      {' '}
+                      more: {project.technologies.slice(visibleTech.length).join(', ')}
+                    </span>
+                  </Badge>
+                </li>
+              ) : null}
+            </ul>
+          </div>
+        </div>
+      </article>
+    </TiltCard>
+  )
+}
 
-                  {latest.description ? (
-                    <p className="mt-3 max-w-[62ch] text-[15px] leading-relaxed text-ink-muted">
-                      {latest.description}
-                    </p>
-                  ) : null}
+/** The newest role, as a single wide row under the project grid. */
+function LatestRole({ role }: { role: Experience }) {
+  const meta = [yearMonthRangeLabel(role.startDate, role.endDate), role.location, ROLE_TYPE[role.type]]
+    .filter(Boolean)
+    .join(' · ')
 
-                  {latest.tags.length > 0 ? (
-                    <ul className="mt-4 flex flex-wrap gap-1.5">
-                      {latest.tags.slice(0, 6).map((tag) => (
-                        <li key={tag}>
-                          <Badge size="sm" className="font-mono">
-                            {tag}
-                          </Badge>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : null}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </Highlight>
-      ) : null}
-    </div>
+  return (
+    <Reveal className="mt-20 grid gap-8 border-t border-line pt-10 lg:grid-cols-12 lg:gap-10 lg:pt-12">
+      <div className="lg:col-span-4">
+        <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">
+          Most recent role
+        </p>
+        <p className="mt-3 font-mono text-xs leading-relaxed text-ink-muted tabular-nums">{meta}</p>
+      </div>
+
+      <div className="min-w-0 lg:col-span-8">
+        <h3 className="font-display text-[clamp(1.5rem,2.6vw,2.25rem)] leading-[1.05] font-semibold tracking-tight text-ink">
+          {role.position} <span className="font-normal text-ink-muted">at</span> {role.company}
+        </h3>
+
+        {role.description ? (
+          <p className="mt-4 max-w-[62ch] text-[15px] leading-relaxed text-ink-muted">
+            {truncate(role.description, 240)}
+          </p>
+        ) : null}
+
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
+          {role.technologies.length > 0 ? (
+            <ul className="flex flex-wrap gap-1.5" aria-label={`Technologies at ${role.company}`}>
+              {role.technologies.slice(0, 6).map((tech) => (
+                <li key={tech}>
+                  <Badge size="sm" className="font-mono">
+                    {tech}
+                  </Badge>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+
+          <Magnetic strength={0.25}>
+            <ButtonLink
+              to={PUBLIC_ROUTES.experience}
+              variant="ghost"
+              iconRight="ArrowRight"
+              className="-mx-2"
+            >
+              See all experience
+            </ButtonLink>
+          </Magnetic>
+        </div>
+      </div>
+    </Reveal>
+  )
+}
+
+/**
+ * "Selected work": the three featured projects as large tilting cards in a
+ * 7 / 5 / 5 grid, followed by the most recent role. Every block links onward
+ * to the page that owns it, and the grid degrades to an empty state when the
+ * projects file is empty rather than inventing content.
+ */
+export function HomeHighlights() {
+  const shown = featuredProjects()
+  const role = experience[0]
+
+  return (
+    <section aria-labelledby="highlight-projects" className="relative py-24 sm:py-36">
+      <div className="mx-auto w-full max-w-7xl px-5 sm:px-8 lg:px-12">
+        <div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-8">
+          <div className="min-w-0">
+            <Parallax speed={-0.15}>
+              <SectionNumber n={2} label="Projects" />
+            </Parallax>
+
+            <TextReveal
+              as="h2"
+              id="highlight-projects"
+              className="mt-6 font-display text-[clamp(2.25rem,6vw,5rem)] leading-[0.95] tracking-tight text-ink"
+            >
+              Selected work
+            </TextReveal>
+
+            <Reveal
+              as="p"
+              delay={0.2}
+              className="mt-5 max-w-[46ch] text-[15px] leading-relaxed text-ink-muted"
+            >
+              Each of these forced me to understand something I had been treating as magic.
+            </Reveal>
+          </div>
+
+          <Reveal delay={0.3} className="pb-1">
+            <Magnetic>
+              <ButtonLink
+                to={PUBLIC_ROUTES.projects}
+                variant="secondary"
+                size="lg"
+                iconRight="ArrowRight"
+              >
+                All projects
+              </ButtonLink>
+            </Magnetic>
+          </Reveal>
+        </div>
+
+        <div className="mt-14 sm:mt-20">
+          {shown.length === 0 ? (
+            <EmptyState
+              icon="FolderGit2"
+              title="No projects listed yet"
+              description="Projects live in src/data/projects.ts and show up here the moment there is one."
+            />
+          ) : (
+            <Stagger stagger={0.1} y={32} className="grid grid-cols-1 gap-5 lg:grid-cols-12">
+              {shown.map((project, index) => (
+                <FeatureCard key={project.id} project={project} lead={index === 0} />
+              ))}
+            </Stagger>
+          )}
+        </div>
+
+        {role ? <LatestRole role={role} /> : null}
+      </div>
+    </section>
   )
 }

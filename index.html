@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" class="">
+<html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -43,7 +43,7 @@
       ;(function () {
         try {
           var stored = localStorage.getItem('pos.theme')
-          var mode = stored ? JSON.parse(stored) : 'system'
+          var mode = stored ? JSON.parse(stored) : 'dark'
           var dark =
             mode === 'dark' ||
             (mode !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches)

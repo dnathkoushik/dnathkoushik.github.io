@@ -17,14 +17,17 @@ const ThemeContext = createContext<ThemeContextValue | null>(null)
 
 const MEDIA = '(prefers-color-scheme: dark)'
 
+/** Dark is the default: the portfolio's motion and glow are designed for it first. */
+const DEFAULT_MODE: ThemeMode = 'dark'
+
 function readStoredMode(): ThemeMode {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.theme)
-    if (!raw) return 'system'
+    if (!raw) return DEFAULT_MODE
     const value = JSON.parse(raw) as unknown
-    return value === 'light' || value === 'dark' || value === 'system' ? value : 'system'
+    return value === 'light' || value === 'dark' || value === 'system' ? value : DEFAULT_MODE
   } catch {
-    return 'system'
+    return DEFAULT_MODE
   }
 }
 

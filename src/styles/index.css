@@ -20,6 +20,18 @@
 }
 
 @font-face {
+  font-family: 'Bricolage Grotesque Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 800;
+  font-stretch: 75% 100%;
+  src: url('@fontsource-variable/bricolage-grotesque/files/bricolage-grotesque-latin-standard-normal.woff2')
+    format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+    U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
   font-family: 'JetBrains Mono Variable';
   font-style: normal;
   font-display: swap;
@@ -49,6 +61,8 @@
   --font-sans:
     'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono Variable', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --font-display:
+    'Bricolage Grotesque Variable', 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
 
   --radius-card: 0.875rem;
 
@@ -79,6 +93,9 @@
   --color-accent-hover: oklch(47% 0.175 258);
   --color-accent-soft: oklch(95% 0.03 258);
   --color-accent-ink: oklch(100% 0 0);
+  /* Second accent, only ever paired with `accent` inside a gradient or glow. */
+  --color-accent-2: oklch(58% 0.2 320);
+  --shadow-glow: 0 0 0 1px oklch(55% 0.17 258 / 0.25), 0 0 40px -8px oklch(55% 0.17 258 / 0.55);
 
   --color-positive: oklch(51% 0.14 155);
   --color-positive-soft: oklch(95% 0.04 155);
@@ -130,6 +147,8 @@
     --color-accent-hover: oklch(76% 0.14 258);
     --color-accent-soft: oklch(30% 0.06 258);
     --color-accent-ink: oklch(17% 0.02 258);
+    --color-accent-2: oklch(72% 0.18 320);
+    --shadow-glow: 0 0 0 1px oklch(70% 0.15 258 / 0.35), 0 0 48px -8px oklch(70% 0.15 258 / 0.6);
 
     --color-positive: oklch(72% 0.15 155);
     --color-positive-soft: oklch(29% 0.06 155);
@@ -208,6 +227,28 @@
     scroll-behavior: smooth;
     /* Offset in-page anchors so headings clear the sticky public header. */
     scroll-padding-top: 5.5rem;
+  }
+
+  /* Lenis drives scrolling on the public site; native smoothing would double it. */
+  html.lenis,
+  html.lenis body {
+    height: auto;
+    scroll-behavior: auto;
+  }
+  .lenis.lenis-stopped {
+    overflow: clip;
+  }
+  .lenis [data-lenis-prevent] {
+    overscroll-behavior: contain;
+  }
+  .lenis.lenis-smooth iframe {
+    pointer-events: none;
+  }
+
+  /* The custom cursor replaces the native one only where it is rendered. */
+  html.has-custom-cursor,
+  html.has-custom-cursor * {
+    cursor: none !important;
   }
 
   body {
@@ -334,9 +375,53 @@
   }
 }
 
+/* Display type for the kinetic headlines. `opsz` follows font-size automatically. */
+@utility font-display {
+  font-family: var(--font-display);
+  font-optical-sizing: auto;
+  letter-spacing: -0.035em;
+}
+
+/* Hollow type for the giant footer name and section numerals.
+ * `-webkit-text-fill-color`, NOT `color: transparent`: the stroke is painted in
+ * currentColor, so making `color` transparent would make the stroke vanish too. */
+@utility text-outline {
+  -webkit-text-stroke: 1px currentColor;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Reveal containers: the child slides up from behind this mask. */
+@utility mask-lines {
+  overflow: hidden;
+  padding-bottom: 0.08em;
+  margin-bottom: -0.08em;
+}
+
+/* Accent gradient text used sparingly on one word per screen at most. */
+@utility text-gradient {
+  background-image: linear-gradient(120deg, var(--color-accent) 0%, var(--color-accent-2) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
 @utility no-scrollbar {
   scrollbar-width: none;
   &::-webkit-scrollbar {
     display: none;
   }
+}
+
+@keyframes grain {
+  0%, 100% { transform: translate(0, 0); }
+  10% { transform: translate(-2%, -3%); }
+  30% { transform: translate(3%, -1%); }
+  50% { transform: translate(-1%, 3%); }
+  70% { transform: translate(2%, 2%); }
+  90% { transform: translate(-3%, 1%); }
+}
+
+@keyframes marquee {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
 }
