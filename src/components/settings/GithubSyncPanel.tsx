@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 
 import type { FormEvent } from 'react'
 import { syncManager } from '@/services/syncManager'
 import { verifyAccess, type GithubSyncConfig } from '@/services/githubSync'
+import { claimDashboard } from '@/services/dashboardAccess'
 import { Button } from '@/components/ui/Button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Field } from '@/components/ui/Field'
@@ -109,6 +110,7 @@ export function GithubSyncPanel() {
     setFormError(undefined)
     try {
       await syncManager.connect(draft, adopt)
+      claimDashboard()
       setToken('')
       toast({ tone: 'positive', title: 'Sync connected', description: 'Your dashboard now commits to GitHub.' })
     } catch (error) {

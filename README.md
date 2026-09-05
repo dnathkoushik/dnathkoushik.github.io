@@ -243,8 +243,21 @@ This deserves to be read carefully, because GitHub Pages is **static hosting** a
 
 - **Everything in this repository and in `dist/` is public.** All of `src/data/`, all component code, all copy. If you type something into a data file, you have published it.
 - **The privacy lock is not authentication.** There is no server, so there is nothing to authenticate against. Any client-side gate on a static site can be bypassed by reading the JavaScript. The lock protects *data at rest in your browser*; it does not protect *anything that has been deployed*.
-- **The `/dashboard` route itself is public.** Anyone can open it. They will see an empty dashboard, because the data is on your machine, not theirs — but the pages themselves are part of the public bundle.
+- **The `/dashboard` URL itself is public.** Anyone can open it; on static hosting that is unavoidable. What they get is a locked door (see below), not your week — but the page code is part of the public bundle and always will be.
 - **A forgotten passphrase is unrecoverable.** There is no reset. Export a backup before enabling the lock.
+
+### The gate on `/dashboard`
+
+A browser that has never used this dashboard sees a **"A private dashboard"** screen, not a dashboard. It offers two ways in:
+
+- **Sign in with GitHub** — paste the token for your private data repo. Your data is loaded from there.
+- **Take a look with sample data** — an explicitly-labelled demo, under a permanent banner saying the content is invented. Nothing is personalised to you.
+
+A browser is let straight through when it already holds dashboard data, or has a sync token configured — so you are never locked out of your own device.
+
+Be clear about what this is: it is **not** authentication, and it is not what keeps your data safe. Your data is safe because it is in a *private GitHub repository*, which needs a real GitHub credential to read. The gate exists so a stranger is never shown something that looks like your private week.
+
+> An earlier version seeded demo data on first load. Nothing leaked — but an incognito window landed in a full dashboard greeting the owner by name, which is indistinguishable from a leak. Demo data is opt-in now.
 
 ### The honest summary
 

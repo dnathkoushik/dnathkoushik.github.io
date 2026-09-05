@@ -400,12 +400,16 @@ export class PersonalDataService implements PersonalActions {
     try {
       const stored = await adapter.load()
       if (stored === null) {
-        // First run on this device: seed the demo dataset so the dashboard has
-        // something to show. Settings can wipe it in one click.
-        this.db = buildSampleDatabase(todayISO())
+        // Nothing on this device.
+        //
+        // This deliberately does NOT seed the demo dataset. `/dashboard` is a
+        // public URL on a static host, so anyone can open it — and auto-seeding
+        // meant a stranger landed in a fully populated dashboard addressed to
+        // the owner by name. Nothing real leaked, but it read exactly like it
+        // had, which is just as bad. An empty database sends the visitor to the
+        // gate in `PersonalLayout` instead; demo data is now opt-in.
+        this.db = createEmptyDatabase()
         this.setStatus('ready')
-        this.pendingWrite = true
-        await this.flush()
         return
       }
 

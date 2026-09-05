@@ -62,28 +62,39 @@ beforeEach(() => {
 })
 
 describe('startup', () => {
-  it('seeds the sample dataset on a first run so the dashboard is never empty', async () => {
+  it('leaves a brand new browser EMPTY rather than seeding demo data', async () => {
+    // `/dashboard` is a public URL. Auto-seeding meant a stranger in an
+    // incognito window landed in a fully populated dashboard addressed to the
+    // owner by name — indistinguishable from a real data leak, even though
+    // nothing had leaked. Demo data is opt-in now.
     const service = new PersonalDataService()
     await service.init()
 
-    // No IndexedDB in this environment, so the chain must have fallen through
-    // to localStorage rather than giving up and losing the user's data.
-    expect(service.getStorageName().toLowerCase()).toContain('local')
     expect(service.getStatus()).toBe('ready')
-    expect(service.getSnapshot().tasks.length).toBeGreaterThan(0)
-    expect(service.getSnapshot().habits.length).toBeGreaterThan(0)
+    expect(service.getSnapshot().tasks).toHaveLength(0)
+    expect(service.getSnapshot().habits).toHaveLength(0)
+    expect(service.getSnapshot().notes).toHaveLength(0)
   })
 
-  it('does not re-seed once the user has cleared the demo data', async () => {
-    const first = new PersonalDataService()
-    await first.init()
-    await first.clearAllEntries()
+  it('ships no personal name by default, so a visitor is never greeted as the owner', async () => {
+    const service = new PersonalDataService()
+    await service.init()
+    expect(service.getSnapshot().settings.displayName).toBe('')
+  })
 
-    const second = new PersonalDataService()
-    await second.init()
+  it('still has its categories, so the dashboard is usable immediately', async () => {
+    const service = new PersonalDataService()
+    await service.init()
+    expect(service.getSnapshot().categories.length).toBeGreaterThan(0)
+  })
 
-    expect(second.getSnapshot().tasks).toHaveLength(0)
-    expect(second.getSnapshot().settings.seedDataCleared).toBe(true)
+  it('loads demo data only when explicitly asked', async () => {
+    const service = new PersonalDataService()
+    await service.init()
+    expect(service.getSnapshot().tasks).toHaveLength(0)
+
+    await service.loadSampleData()
+    expect(service.getSnapshot().tasks.length).toBeGreaterThan(0)
   })
 })
 

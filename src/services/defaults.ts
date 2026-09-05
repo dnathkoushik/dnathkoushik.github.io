@@ -35,7 +35,9 @@ export const DEFAULT_SETTINGS: PersonalSettings = {
   weekStartsOn: 1,
   dailyHoursTarget: 6,
   dailyTaskTarget: 5,
-  displayName: 'Koushik',
+  // Intentionally blank: the greeting must not address a stranger by the
+  // owner's name. Set in Settings once, then it is stored per device.
+  displayName: '',
   seedDataCleared: false,
 }
 

@@ -118,6 +118,7 @@ import {
   ListTodo,
   LoaderCircle,
   Lock,
+  LogIn,
   LockOpen,
   LogOut,
   Mail,
@@ -418,6 +419,7 @@ const ICONS = {
 
   /* -- GitHub sync -------------------------------------------------------- */
   CloudOff,
+  LogIn,
   Plug,
   Unplug,
 

@@ -210,7 +210,10 @@ export default function OverviewPage() {
     db.reviews.length === 0 &&
     db.days.length === 0
 
-  const greeting = `${GREETING[partOfDay(nowClockTime())]}, ${settings.displayName}`
+  // displayName is blank until the owner sets it, so the comma has to go too.
+  const greeting = settings.displayName.trim()
+    ? `${GREETING[partOfDay(nowClockTime())]}, ${settings.displayName.trim()}`
+    : GREETING[partOfDay(nowClockTime())]
   const remaining = todayStats.tasksTotal - todayStats.tasksCompleted - todayStats.tasksSkipped
   const monthCompleted = monthlyGoals.filter(isGoalReached).length
   const monthAverage =

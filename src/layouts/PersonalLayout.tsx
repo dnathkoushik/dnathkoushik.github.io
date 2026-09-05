@@ -6,6 +6,9 @@ import { PersonalDataProvider } from '@/providers/PersonalDataProvider'
 import { syncManager } from '@/services/syncManager'
 import { usePersonalData } from '@/providers/personalDataContext'
 import { LockScreen } from '@/components/personal/LockScreen'
+import { DashboardGate } from '@/components/personal/DashboardGate'
+import { DemoBanner } from '@/components/personal/DemoBanner'
+import { isDashboardOpen } from '@/services/dashboardAccess'
 import { SkipLink } from '@/components/common/SkipLink'
 import { ThemeToggle } from '@/components/common/ThemeToggle'
 import { CommandPalette } from '@/components/nav/CommandPalette'
@@ -54,7 +57,7 @@ export function PersonalLayout() {
 }
 
 function PersonalShell() {
-  const { status } = usePersonalData()
+  const { status, db } = usePersonalData()
 
   // Start GitHub sync only once the local database is actually readable — there
   // is nothing to push while we are still loading, and pushing over a locked
@@ -68,6 +71,9 @@ function PersonalShell() {
   if (status === 'locked') return <LockScreen />
   if (status === 'error') return <RecoveryScreen />
   if (status === 'loading') return <LoadingShell />
+
+  // A browser that has never used this dashboard sees the door, not the room.
+  if (!isDashboardOpen(db)) return <DashboardGate />
 
   return <DashboardChrome />
 }
@@ -143,6 +149,8 @@ function DashboardChrome() {
 
           <DropdownMenu items={moreItems} label="More dashboard sections" triggerIcon="Ellipsis" />
         </header>
+
+        <DemoBanner />
 
         <main
           id="main-content"
