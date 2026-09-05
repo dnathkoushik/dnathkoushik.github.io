@@ -1,0 +1,88 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  # Lets you re-deploy from the Actions tab without pushing a commit.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one deployment at a time. Queued runs wait rather than cancelling, so a
+# push never leaves the site half-published.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      # A user/organisation site (<owner>.github.io) is served from the domain
+      # root; every other repository is served from /<repo>/. Getting this wrong
+      # is the single most common reason a Pages deploy renders a blank page,
+      # so it is derived here instead of being hand-maintained in vite.config.ts.
+      - name: Resolve base path
+        id: base
+        run: |
+          REPO="${GITHUB_REPOSITORY#*/}"
+          OWNER_LC="$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')"
+          REPO_LC="$(echo "$REPO" | tr '[:upper:]' '[:lower:]')"
+          if [ "$REPO_LC" = "${OWNER_LC}.github.io" ]; then
+            echo "path=/" >> "$GITHUB_OUTPUT"
+          else
+            echo "path=/${REPO}/" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build
+        env:
+          BASE_PATH: ${{ steps.base.outputs.path }}
+          # Override in repository Settings → Secrets and variables → Actions →
+          # Variables if you use a custom domain.
+          VITE_SITE_URL: ${{ vars.SITE_URL || format('https://{0}.github.io', github.repository_owner) }}
+        run: npm run build
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

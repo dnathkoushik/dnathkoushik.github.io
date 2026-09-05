@@ -1,0 +1,46 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build output
+dist/
+dist-ssr/
+*.local
+
+# Environment — never commit real values
+.env
+.env.local
+.env.*.local
+
+# Editors
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+logs/
+*.log
+
+# Test / tooling caches
+coverage/
+.vitest/
+.eslintcache
+*.tsbuildinfo
+
+# Personal data exports.
+# The dashboard's backup files contain your private journal, goals and logs.
+# They must never end up in a public repository.
+*backup*.json
+personal-backup/

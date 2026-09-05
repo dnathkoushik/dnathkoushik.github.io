@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="Koushik Debnath — Software Engineer">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#15171c"/>
+      <stop offset="1" stop-color="#1d2230"/>
+    </linearGradient>
+    <linearGradient id="mark" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6f86f5"/>
+      <stop offset="1" stop-color="#3f51d4"/>
+    </linearGradient>
+    <pattern id="dots" width="28" height="28" patternUnits="userSpaceOnUse">
+      <circle cx="1.5" cy="1.5" r="1.5" fill="#ffffff" fill-opacity="0.045"/>
+    </pattern>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#dots)"/>
+  <circle cx="1010" cy="120" r="300" fill="#4f6bed" fill-opacity="0.10"/>
+
+  <rect x="80" y="86" width="72" height="72" rx="17" fill="url(#mark)"/>
+  <path d="M100 104v36M100 122l15-18M100 122l16 18" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M126 104h4a15 15 0 0 1 0 36h-4z" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <text x="80" y="300" font-family="Inter, Segoe UI, system-ui, sans-serif" font-size="82" font-weight="650" fill="#f2f4f8" letter-spacing="-2">Koushik Debnath</text>
+  <text x="80" y="366" font-family="Inter, Segoe UI, system-ui, sans-serif" font-size="36" font-weight="500" fill="#9aa4b8">Software Engineer</text>
+
+  <rect x="80" y="424" width="440" height="2" fill="#ffffff" fill-opacity="0.10"/>
+
+  <text x="80" y="486" font-family="JetBrains Mono, ui-monospace, monospace" font-size="25" fill="#7f8aa3">Backend</text>
+  <text x="185" y="486" font-family="JetBrains Mono, ui-monospace, monospace" font-size="25" fill="#4a5468">/</text>
+  <text x="215" y="486" font-family="JetBrains Mono, ui-monospace, monospace" font-size="25" fill="#7f8aa3">Evaluation</text>
+  <text x="440" y="486" font-family="JetBrains Mono, ui-monospace, monospace" font-size="25" fill="#4a5468">/</text>
+  <text x="470" y="486" font-family="JetBrains Mono, ui-monospace, monospace" font-size="25" fill="#7f8aa3">DSA</text>
+
+  <text x="80" y="556" font-family="Inter, Segoe UI, system-ui, sans-serif" font-size="24" fill="#5d677d">IIT Kharagpur  ·  LeetCode Guardian  ·  Codeforces Expert</text>
+</svg>

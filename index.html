@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en" class="">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+
+    <title>Koushik Debnath — Software Engineer</title>
+    <meta
+      name="description"
+      content="Software engineer at IIT Kharagpur working on backend systems, evaluation pipelines and competitive programming. LeetCode Guardian, Codeforces Expert."
+    />
+    <link rel="canonical" href="https://dnathkoushik.github.io/" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Koushik Debnath" />
+    <meta property="og:title" content="Koushik Debnath — Software Engineer" />
+    <meta
+      property="og:description"
+      content="Software engineer at IIT Kharagpur working on backend systems, evaluation pipelines and competitive programming. LeetCode Guardian, Codeforces Expert."
+    />
+    <meta property="og:url" content="https://dnathkoushik.github.io/" />
+    <meta property="og:image" content="/og-image.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Koushik Debnath — Software Engineer" />
+    <meta
+      name="twitter:description"
+      content="Software engineer at IIT Kharagpur working on backend systems, evaluation pipelines and competitive programming. LeetCode Guardian, Codeforces Expert."
+    />
+    <meta name="twitter:image" content="/og-image.svg" />
+
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" content="#f7f8fa" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#16181d" media="(prefers-color-scheme: dark)" />
+
+    <!--
+      Applies the stored theme before first paint so the page never flashes the
+      wrong background. Kept inline and tiny on purpose; ThemeProvider takes
+      over once React mounts and uses the exact same storage key.
+    -->
+    <script>
+      ;(function () {
+        try {
+          var stored = localStorage.getItem('pos.theme')
+          var mode = stored ? JSON.parse(stored) : 'system'
+          var dark =
+            mode === 'dark' ||
+            (mode !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+          document.documentElement.classList.toggle('dark', dark)
+          document.documentElement.style.colorScheme = dark ? 'dark' : 'light'
+        } catch (e) {
+          /* private mode / storage disabled — fall through to the light theme */
+        }
+      })()
+    </script>
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Person",
+        "name": "Koushik Debnath",
+        "jobTitle": "Software Engineer",
+        "url": "https://dnathkoushik.github.io/",
+        "alumniOf": "Indian Institute of Technology Kharagpur",
+        "sameAs": [
+          "https://github.com/dnathkoushik",
+          "https://www.linkedin.com/in/dnathkoushik/",
+          "https://leetcode.com/u/dnathkoushik/",
+          "https://codeforces.com/profile/kdisback"
+        ]
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>
+      <div style="padding: 2rem; font-family: system-ui, sans-serif">
+        <h1>JavaScript is required</h1>
+        <p>This portfolio is a single-page application. Please enable JavaScript to view it.</p>
+      </div>
+    </noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
