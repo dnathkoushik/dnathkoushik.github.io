@@ -2,7 +2,7 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { PUBLIC_ROUTES } from '@/config/routes'
-import { profile } from '@/data'
+import { githubConfig, profile } from '@/data'
 import { usePersonalData } from '@/providers/personalDataContext'
 import { syncManager } from '@/services/syncManager'
 import { verifyAccess, type GithubSyncConfig } from '@/services/githubSync'
@@ -31,8 +31,8 @@ const TOKEN_URL = 'https://github.com/settings/personal-access-tokens/new'
 export function DashboardGate() {
   const { actions } = usePersonalData()
   const [mode, setMode] = useState<'closed' | 'signin'>('closed')
-  const [owner, setOwner] = useState('')
-  const [repo, setRepo] = useState('')
+  const [owner, setOwner] = useState(githubConfig.username)
+  const [repo, setRepo] = useState('dashboard-data')
   const [token, setToken] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | undefined>()

@@ -3,6 +3,7 @@ import type { FormEvent } from 'react'
 import { syncManager } from '@/services/syncManager'
 import { verifyAccess, type GithubSyncConfig } from '@/services/githubSync'
 import { claimDashboard } from '@/services/dashboardAccess'
+import { githubConfig } from '@/data'
 import { Button } from '@/components/ui/Button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Field } from '@/components/ui/Field'
@@ -13,6 +14,9 @@ import { useToast } from '@/components/ui/Toast'
 import { cn } from '@/lib/cn'
 
 const TOKEN_URL = 'https://github.com/settings/personal-access-tokens/new'
+
+/** Suggested name for the private repository that holds the data. */
+const DEFAULT_DATA_REPO = 'dashboard-data'
 
 type Adopt = 'remote' | 'merge' | 'local'
 
@@ -54,8 +58,10 @@ export function GithubSyncPanel() {
   const config = syncManager.getConfig()
   const connected = status.state !== 'disconnected' && config !== null
 
-  const [owner, setOwner] = useState(config?.owner ?? '')
-  const [repo, setRepo] = useState(config?.repo ?? '')
+  // Pre-filled from the portfolio's own GitHub config so the only thing that
+  // actually has to be typed is the token. Both stay editable.
+  const [owner, setOwner] = useState(config?.owner ?? githubConfig.username)
+  const [repo, setRepo] = useState(config?.repo ?? DEFAULT_DATA_REPO)
   const [branch, setBranch] = useState(config?.branch ?? 'main')
   const [path, setPath] = useState(config?.path ?? 'dashboard.json')
   const [token, setToken] = useState('')

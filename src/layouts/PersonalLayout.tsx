@@ -8,7 +8,7 @@ import { usePersonalData } from '@/providers/personalDataContext'
 import { LockScreen } from '@/components/personal/LockScreen'
 import { DashboardGate } from '@/components/personal/DashboardGate'
 import { DemoBanner } from '@/components/personal/DemoBanner'
-import { isDashboardOpen } from '@/services/dashboardAccess'
+import { claimDashboard, claimKind, isDashboardOpen } from '@/services/dashboardAccess'
 import { SkipLink } from '@/components/common/SkipLink'
 import { ThemeToggle } from '@/components/common/ThemeToggle'
 import { CommandPalette } from '@/components/nav/CommandPalette'
@@ -68,12 +68,23 @@ function PersonalShell() {
     return () => syncManager.stop()
   }, [status])
 
+  const open = status === 'ready' && isDashboardOpen(db)
+
+  // Once a browser has legitimately been inside, remember it. Without this,
+  // emptying the dashboard — Settings -> Clear entries, or finishing the last
+  // task of the day on a device with no sync — would make `hasAnyData` false
+  // and bounce the owner out to the gate. Access must not depend on there
+  // being something to look at.
+  useEffect(() => {
+    if (open && claimKind() === null) claimDashboard('owner')
+  }, [open])
+
   if (status === 'locked') return <LockScreen />
   if (status === 'error') return <RecoveryScreen />
   if (status === 'loading') return <LoadingShell />
 
   // A browser that has never used this dashboard sees the door, not the room.
-  if (!isDashboardOpen(db)) return <DashboardGate />
+  if (!open) return <DashboardGate />
 
   return <DashboardChrome />
 }
