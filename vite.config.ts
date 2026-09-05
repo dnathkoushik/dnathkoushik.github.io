@@ -2,7 +2,7 @@ import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { fileURLToPath, URL } from 'node:url'
-import { copyFileSync, existsSync, writeFileSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { PUBLIC_ROUTES, NOINDEX_PREFIX } from './src/config/routes.ts'
 
 /**
@@ -24,16 +24,34 @@ const distFile = (name: string) => fileURLToPath(new URL(`./dist/${name}`, impor
 
 /**
  * GitHub Pages has no server-side rewrite rules, so a hard refresh on a deep
- * link such as `/projects` would 404. Copying `index.html` to `404.html` makes
- * Pages serve the SPA shell for any unknown path while keeping the URL intact,
- * which is the least intrusive way to support client-side routing.
+ * link such as `/projects` would 404. Two things fix that:
+ *
+ *  1. Every PUBLIC route gets its own `<route>/index.html`. Pages then serves a
+ *     real 200 for `/projects`, React Router reads the path and renders the
+ *     right page, and the URL never changes. This matters beyond aesthetics —
+ *     a 404 status keeps a page out of the search index no matter what the
+ *     sitemap says, so without it only the home page would ever be indexed.
+ *
+ *  2. `404.html` catches everything else — mistyped URLs and the dashboard,
+ *     which is deliberately left on the fallback because it must NOT be
+ *     indexable. The app still renders; the status is just 404.
+ *
+ * No redirect hack, no query-string round trip, no flash of the wrong page.
  */
 function spaFallback() {
   return {
-    name: 'spa-404-fallback',
+    name: 'spa-github-pages-routes',
     closeBundle() {
-      if (existsSync(distFile('index.html'))) {
-        copyFileSync(distFile('index.html'), distFile('404.html'))
+      const index = distFile('index.html')
+      if (!existsSync(index)) return
+
+      copyFileSync(index, distFile('404.html'))
+
+      for (const route of Object.values(PUBLIC_ROUTES)) {
+        if (route === '/') continue
+        const dir = fileURLToPath(new URL(`./dist${route}`, import.meta.url))
+        mkdirSync(dir, { recursive: true })
+        copyFileSync(index, `${dir}/index.html`)
       }
     },
   }
