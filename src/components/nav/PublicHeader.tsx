@@ -307,7 +307,7 @@ export function PublicHeader({ onOpenSearch }: PublicHeaderProps) {
           >
             <Icon name="Search" className="size-4" />
             {isTouch ? null : (
-              <kbd className="hidden rounded-full border border-line bg-surface-muted px-2 font-mono text-[10px] leading-5 tracking-[0.08em] text-ink-faint sm:inline-block">
+              <kbd className="hidden rounded-full border border-line bg-surface-muted px-2 font-mono text-[10px] leading-5 tracking-[0.08em] text-ink-muted sm:inline-block">
                 {SHORTCUT_HINT}
               </kbd>
             )}
