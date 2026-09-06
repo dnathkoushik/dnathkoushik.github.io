@@ -167,3 +167,27 @@ export interface SeoConfig {
   twitterHandle?: string
   keywords: string[]
 }
+
+/**
+ * A real photograph of the owner. These are what stop the site reading as a
+ * template: keep captions factual (where, roughly when) and alt text literal —
+ * a screen reader user should get the same picture a sighted one does.
+ */
+export interface Photo {
+  id: string
+  /** Path under `public/photos/`, e.g. "skywalk.webp". A "-480" variant must exist too. */
+  src: string
+  /** Intrinsic pixel size of the main file, so layout never shifts. */
+  width: number
+  height: number
+  /** Literal description of what is in the frame. */
+  alt: string
+  /** Short editorial caption shown under the frame. */
+  caption: string
+  /** Place, in mono, e.g. "Hyderabad". */
+  place: string
+  /** "2026-06" style; rendered as "Jun 2026". Optional when you genuinely do not know. */
+  date?: YearMonth
+  /** Which experience entry this belongs to, if any — used by the experience page. */
+  experienceId?: string
+}

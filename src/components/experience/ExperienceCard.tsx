@@ -3,6 +3,8 @@ import type { Experience, Tone } from '@/types'
 import { Badge } from '@/components/ui/Badge'
 import { ButtonLink } from '@/components/ui/Button'
 import { Stagger } from '@/motion'
+import { photosFor } from '@/data'
+import { PhotoFrame } from '@/components/portfolio/PhotoFrame'
 import { yearMonthRangeLabel } from '@/utils/date'
 import { cn } from '@/lib/cn'
 
@@ -58,6 +60,7 @@ export interface ExperienceCardProps {
  * the single focus stop for it.
  */
 export function ExperienceCard({ role, index, template = false, className }: ExperienceCardProps) {
+  const shots = photosFor(role.id).slice(0, 3)
   const type = TYPE_META[role.type]
   const current = !role.endDate
   const headingId = `experience-${role.id}`
@@ -133,6 +136,36 @@ export function ExperienceCard({ role, index, template = false, className }: Exp
                 </li>
               ))}
             </ul>
+          ) : null}
+
+          {shots.length > 0 ? (
+            <div aria-label={`Photographs from ${role.company}`} role="group" className="pt-1">
+              {/* A small stack of prints. Each sits a little askew; hovering the
+                  stack straightens and lifts the one under the pointer. */}
+              <div className="flex items-end">
+                {shots.map((photo, i) => (
+                  <PhotoFrame
+                    key={photo.id}
+                    photo={photo}
+                    aspect="4 / 5"
+                    focus={i === 0 ? '65% 35%' : undefined}
+                    caption={false}
+                    still
+                    sizes="8rem"
+                    className={cn(
+                      'w-24 shrink-0 transition-transform duration-500 ease-out sm:w-28',
+                      'hover:z-10 hover:-translate-y-2 hover:rotate-0',
+                      i === 0 && '-rotate-[4deg]',
+                      i === 1 && '-ml-6 rotate-[2deg] sm:-ml-7',
+                      i === 2 && '-ml-6 -rotate-[1.5deg] sm:-ml-7',
+                    )}
+                  />
+                ))}
+              </div>
+              <p className="mt-3 font-mono text-[11px] tracking-[0.18em] text-ink-faint uppercase">
+                {shots.length} {shots.length === 1 ? 'photo' : 'photos'} · {shots[0]?.place}
+              </p>
+            </div>
           ) : null}
 
           {role.url ? (

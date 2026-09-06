@@ -178,6 +178,7 @@ Everything public is a plain TypeScript file in `src/data/`. Edit, commit, push 
 | `src/data/achievements.ts` | Contests, certifications, hackathons, awards, milestones |
 | `src/data/github.ts` | Your GitHub username and pinned repositories |
 | `src/data/seo.ts` | Site URL, title, description, OG image, keywords |
+| `src/data/photos.ts` | Your photographs — captions, places, dates, and which role each belongs to |
 
 Each array is typed with `satisfies`, so a missing or misspelled field is a build error rather than a broken page.
 
@@ -192,6 +193,15 @@ The repository ships with obvious placeholders so the layout is exercised on fir
 - `src/data/experience.ts`, `education.ts`, `achievements.ts` — these ship as clearly-marked **example templates**, not as claims about you. Replace them with real entries or delete them; the pages render an honest empty state if you do.
 
 Add your avatar and resume to `public/` (e.g. `public/avatar.jpg`, `public/resume.pdf`) and reference them as `/avatar.jpg`. Use the `asset()` helper from `src/config/app.ts` if you need to build such a path in code, so it stays correct under a project sub-path.
+
+### Adding a photo
+
+Photos are what stop the site reading as a template, so they get their own data file. To add one:
+
+1. Export it as WebP twice — full size (≤ 1280 px on the long edge is plenty) and a 480 px-wide version — named `something.webp` and `something-480.webp`, and drop both in `public/photos/`.
+2. Add an entry to `src/data/photos.ts` with the intrinsic `width`/`height` of the full file, a literal `alt` description, a short `caption`, the `place`, and optionally a `date` and the `experienceId` of the role it belongs to.
+
+The first entry is the About-page portrait; the home-page strip shows them all in order; a role's photos appear as a small stack on its experience card. Keep captions to things that are true — a wrong place on a photo is the fastest way to make a real site feel fake again.
 
 ### Replacing the social preview image
 

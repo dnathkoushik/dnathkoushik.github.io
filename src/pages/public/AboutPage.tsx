@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
+import { asset } from '@/config/app'
 import { PUBLIC_ROUTES } from '@/config/routes'
-import { education, experience, profile, projects, seo, skillCategories } from '@/data'
+import { education, experience, photos, profile, projects, seo, skillCategories } from '@/data'
 import { useDocumentMeta } from '@/hooks/useDocumentMeta'
 import { gsap, useGSAP, MOTION_CONDITIONS } from '@/motion/gsap'
 import type { MotionConditions } from '@/motion/gsap'
@@ -157,14 +158,15 @@ function MarqueeBand({
 }
 
 /**
- * The tall portrait. Falls back to outlined initials when there is no image or
- * the image fails, so the frame never shows a broken `<img>`.
+ * The tall portrait: the first real photograph, cropped to keep the face in
+ * frame. Falls back to outlined initials if there is no photo or it fails to
+ * load, so the frame never shows a broken `<img>`.
  */
 function Portrait() {
   const [failed, setFailed] = useState(false)
-  const src = profile.avatar && !failed ? publicHref(profile.avatar) : undefined
+  const photo = photos[0]
 
-  if (!src) {
+  if (!photo || failed) {
     return (
       <span aria-hidden="true" className="grid size-full place-items-center bg-surface-muted">
         <span
@@ -177,14 +179,21 @@ function Portrait() {
     )
   }
 
+  const base = photo.src.replace(/\.webp$/, '')
   return (
     <img
-      src={src}
-      alt={profile.name}
-      width={800}
-      height={1000}
+      src={asset(`photos/${base}.webp`)}
+      srcSet={`${asset(`photos/${base}-480.webp`)} 480w, ${asset(`photos/${base}.webp`)} ${photo.width}w`}
+      sizes="(min-width: 1024px) 34rem, 90vw"
+      alt={photo.alt}
+      width={photo.width}
+      height={photo.height}
+      loading="eager"
+      fetchPriority="high"
       decoding="async"
       onError={() => setFailed(true)}
+      // The subject stands right of centre in the upper third of this frame.
+      style={{ objectPosition: '65% 35%' }}
       className="size-full object-cover"
     />
   )
@@ -295,7 +304,7 @@ export default function AboutPage() {
                 <p className={cn(EYEBROW, 'mt-4 flex flex-wrap items-center gap-x-3 gap-y-1')}>
                   <span className="text-ink">{profile.name}</span>
                   <span aria-hidden="true" className="size-1 rounded-full bg-accent" />
-                  <span>{profile.location}</span>
+                  <span>{photos[0]?.place ?? profile.location}</span>
                 </p>
               </Reveal>
             </div>

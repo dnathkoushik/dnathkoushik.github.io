@@ -7,6 +7,7 @@ import { StatsBand } from '@/components/portfolio/StatsBand'
 import { CurrentFocus } from '@/components/portfolio/CurrentFocus'
 import { SkillsMarquee } from '@/components/portfolio/SkillsMarquee'
 import { HomeHighlights } from '@/components/portfolio/HomeHighlights'
+import { PhotoStrip } from '@/components/portfolio/PhotoStrip'
 import { Magnetic, Reveal, Stagger, TextReveal } from '@/motion'
 
 /**
@@ -98,7 +99,8 @@ function ClosingCta() {
 
 /**
  * The home page: the hero, four numbers, what I am doing right now, a band of
- * what I build with, three pieces of selected work, and an invitation.
+ * what I build with, three pieces of selected work, the photographs that prove a
+ * person is behind it, and an invitation.
  * Every word on it comes out of `src/data`; every section is full-bleed and
  * owns its own container.
  */
@@ -116,6 +118,7 @@ export default function HomePage() {
       <CurrentFocus number={1} />
       <SkillsMarquee />
       <HomeHighlights />
+      <PhotoStrip number={3} />
       <ClosingCta />
     </div>
   )

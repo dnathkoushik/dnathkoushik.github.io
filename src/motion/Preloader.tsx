@@ -150,7 +150,7 @@ export function Preloader() {
       <span
         ref={counterRef}
         aria-hidden="true"
-        className="absolute right-6 bottom-6 font-mono text-xs tracking-[0.18em] text-ink-muted tabular-nums sm:right-10 sm:bottom-8"
+        className="absolute right-6 bottom-6 font-mono text-xs tracking-[0.18em] text-ink tabular-nums sm:right-10 sm:bottom-8"
       >
         000
       </span>

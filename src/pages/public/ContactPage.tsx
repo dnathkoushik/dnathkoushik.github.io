@@ -1,6 +1,6 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { FormEvent, Ref } from 'react'
-import { profile } from '@/data'
+import { photos, profile } from '@/data'
 import { PUBLIC_ROUTES } from '@/config/routes'
 import { useDocumentMeta } from '@/hooks/useDocumentMeta'
 import { Button, buttonClasses } from '@/components/ui/Button'
@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
 import { useToast } from '@/components/ui/Toast'
 import { ContactCard } from '@/components/contact/ContactCard'
+import { PhotoFrame } from '@/components/portfolio/PhotoFrame'
 import {
   Magnetic,
   Marquee,
@@ -117,6 +118,8 @@ const MIN_SUBJECT = 3
 const MIN_MESSAGE = 12
 
 export default function ContactPage() {
+  const portrait = photos.find((photo) => photo.id === 'hyderabad-skyline') ?? photos.at(-1)
+
   useDocumentMeta({
     title: 'Contact',
     description: `Ways to reach ${profile.name} — email, GitHub and LinkedIn, plus a message composer that opens in your own mail app.`,
@@ -235,7 +238,8 @@ export default function ContactPage() {
   return (
     <div>
       <section aria-labelledby="contact-title" className="pt-20 pb-16 sm:pt-32 sm:pb-24">
-        <div className={CONTAINER}>
+        <div className={cn(CONTAINER, 'grid gap-12 lg:grid-cols-12 lg:items-start lg:gap-16')}>
+          <div className="min-w-0 lg:col-span-7">
           <Parallax speed={-0.15}>
             <SectionNumber n={1} label="Contact" />
           </Parallax>
@@ -339,6 +343,23 @@ export default function ContactPage() {
             </dl>
           </Reveal>
         </div>
+
+          {/* The one photograph on this page: a person, not a form. */}
+          {portrait ? (
+            <div className="lg:col-span-5 lg:pt-20">
+              <Parallax speed={0.12}>
+                <PhotoFrame
+                  photo={portrait}
+                  aspect="4 / 5"
+                  focus="50% 68%"
+                  priority
+                  sizes="(min-width: 1024px) 26rem, 90vw"
+                />
+              </Parallax>
+            </div>
+          ) : null}
+        </div>
+      
       </section>
 
       <PersonalBand items={bandItems} />
