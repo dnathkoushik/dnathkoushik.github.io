@@ -12,6 +12,7 @@ import { achievements, experience, projects, skillCategories } from '@/data'
 import type { PersonalDatabase, SearchResult, SearchResultKind } from '@/types'
 import { formatWeekLabel } from '@/utils/date'
 import { truncate } from '@/utils/format'
+import { KIND_META, STAGE_META, WARMTH_META } from '@/utils/outreach'
 
 /** Lower is better, so these read as ranks rather than relevance. */
 const SCORE_EXACT = 0
@@ -289,6 +290,70 @@ function privateCandidates(db: PersonalDatabase): Candidate[] {
       href: PERSONAL_ROUTES.habits,
       private: true,
       body: habit.unit,
+    })
+  }
+
+  // Outreach. Each href carries `?id=` so the page can open the record.
+  const companyName = new Map(db.companies.map((company) => [company.id, company.name]))
+
+  for (const company of db.companies) {
+    candidates.push({
+      id: `company:${company.id}`,
+      kind: 'company',
+      title: company.name,
+      subtitle: [KIND_META[company.kind].label, company.location].filter(Boolean).join(' · '),
+      href: `${PERSONAL_ROUTES.outreachCompanies}?id=${encodeURIComponent(company.id)}`,
+      private: true,
+      body: [
+        company.industry ?? '',
+        company.stage ?? '',
+        company.location ?? '',
+        company.website ?? '',
+        company.why ?? '',
+        ...company.tags,
+        ...company.facts.map((fact) => fact.text),
+      ].join(' '),
+    })
+  }
+
+  for (const contact of db.contacts) {
+    const employer = contact.companyId ? companyName.get(contact.companyId) : undefined
+    candidates.push({
+      id: `contact:${contact.id}`,
+      kind: 'contact',
+      title: contact.name,
+      subtitle: [contact.role, employer].filter(Boolean).join(' · ') || WARMTH_META[contact.warmth].label,
+      href: `${PERSONAL_ROUTES.outreachContacts}?id=${encodeURIComponent(contact.id)}`,
+      private: true,
+      body: [
+        contact.role ?? '',
+        employer ?? '',
+        contact.email ?? '',
+        contact.notes ?? '',
+        WARMTH_META[contact.warmth].label,
+      ].join(' '),
+    })
+  }
+
+  for (const opportunity of db.opportunities) {
+    const employer = companyName.get(opportunity.companyId)
+    candidates.push({
+      id: `opportunity:${opportunity.id}`,
+      kind: 'opportunity',
+      title: opportunity.title,
+      subtitle: [employer, STAGE_META[opportunity.stage].label].filter(Boolean).join(' · '),
+      href: `${PERSONAL_ROUTES.outreachPipeline}?id=${encodeURIComponent(opportunity.id)}`,
+      date: opportunity.nextActionDue ?? opportunity.appliedAt,
+      private: true,
+      body: [
+        employer ?? '',
+        opportunity.type,
+        opportunity.source,
+        opportunity.nextAction ?? '',
+        opportunity.notes ?? '',
+        opportunity.compensation ?? '',
+        opportunity.resumeVersion ?? '',
+      ].join(' '),
     })
   }
 

@@ -58,11 +58,12 @@ describe('a brand new browser', () => {
     expect(isDashboardOpen(createEmptyDatabase())).toBe(false)
   })
 
-  it('is still closed when only the default categories are present', () => {
-    // An empty database always ships categories and settings. Those must not
-    // be mistaken for the owner having used this device.
+  it('is still closed when only the default categories and templates are present', () => {
+    // An empty database always ships categories, settings and the default
+    // outreach templates. None of those mean the owner has used this device.
     const db = createEmptyDatabase()
     expect(db.categories.length).toBeGreaterThan(0)
+    expect(db.templates.length).toBeGreaterThan(0)
     expect(hasAnyData(db)).toBe(false)
     expect(isDashboardOpen(db)).toBe(false)
   })
@@ -80,6 +81,19 @@ describe('a browser that has been used', () => {
     [
       'reviews',
       (db: PersonalDatabase) => (db.reviews = [{ id: 'r1' }] as PersonalDatabase['reviews']),
+    ],
+    [
+      'companies',
+      (db: PersonalDatabase) => (db.companies = [{ id: 'c1' }] as PersonalDatabase['companies']),
+    ],
+    [
+      'opportunities',
+      (db: PersonalDatabase) =>
+        (db.opportunities = [{ id: 'o1' }] as PersonalDatabase['opportunities']),
+    ],
+    [
+      'touches',
+      (db: PersonalDatabase) => (db.touches = [{ id: 't1' }] as PersonalDatabase['touches']),
     ],
   ])('is open when the database holds %s', (_name, fill) => {
     const db = createEmptyDatabase()

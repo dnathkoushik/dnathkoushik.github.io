@@ -28,6 +28,7 @@ export const KIND_STYLE: Record<ActivityKind, KindStyle> = {
   note: { icon: 'StickyNote', tone: 'neutral', label: 'Note' },
   review: { icon: 'ClipboardList', tone: 'accent', label: 'Weekly review' },
   'day-objective': { icon: 'Crosshair', tone: 'neutral', label: 'Objective set' },
+  touch: { icon: 'Send', tone: 'info', label: 'Outreach' },
 }
 
 /** Local wall-clock time of an instant, `HH:mm`. */

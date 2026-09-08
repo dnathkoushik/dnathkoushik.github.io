@@ -195,6 +195,9 @@ export function Dialog({
 
     const panel = panelRef.current
     if (!panel) return
+    // A dialog opened from inside this one is portalled elsewhere in the DOM but
+    // still bubbles through the React tree. Its Tab presses are its own to trap.
+    if (event.target instanceof Node && !panel.contains(event.target)) return
     const items = focusableWithin(panel)
     if (items.length === 0) {
       event.preventDefault()

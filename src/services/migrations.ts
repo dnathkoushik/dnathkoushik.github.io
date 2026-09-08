@@ -13,31 +13,60 @@
  *   - missing collections become empty arrays,
  *   - records missing an id get one, duplicate ids get a fresh one,
  *   - unknown enum values snap back to a sane default,
- *   - references to categories or habits that no longer exist are re-pointed or
- *     dropped rather than left dangling,
+ *   - references to categories, habits, companies, contacts or opportunities
+ *     that no longer exist are re-pointed, cleared or dropped rather than left
+ *     dangling,
  *   - a version from the future is clamped, so an old build can still open a
  *     new export (losing only the fields it does not understand).
  */
 import { DB_VERSION } from '@/config/app'
-import { createEmptyDatabase, DEFAULT_CATEGORIES, DEFAULT_SETTINGS } from '@/services/defaults'
+import {
+  createEmptyDatabase,
+  DEFAULT_CATEGORIES,
+  DEFAULT_FIT_CRITERIA,
+  DEFAULT_OUTREACH,
+  DEFAULT_SETTINGS,
+  DEFAULT_TEMPLATES,
+} from '@/services/defaults'
 import { todayISO } from '@/utils/date'
 import { uid } from '@/utils/ids'
 import type {
   Category,
   CategoryColor,
+  Company,
+  CompanyFact,
+  CompanyKind,
+  CompanySize,
+  Contact,
+  ContactWarmth,
   DayMeta,
+  FitCriterion,
+  FitValue,
   GoalStatus,
   Habit,
   HabitEntry,
   ISODate,
   LogEntry,
+  MessageTemplate,
   MonthlyGoal,
   Note,
+  Opportunity,
+  OpportunitySource,
+  OpportunityStage,
+  OpportunityType,
+  OutreachSettings,
   PersonalDatabase,
   PersonalSettings,
   Priority,
+  StageChange,
   Task,
+  TaskLink,
   TaskStatus,
+  TemplatePurpose,
+  Touch,
+  TouchChannel,
+  TouchDirection,
+  TouchOutcome,
   WeeklyGoal,
   WeeklyReview,
 } from '@/types'
@@ -77,9 +106,34 @@ export interface Migration {
  *      version. Steps run in ascending `to` order, each on the output of the
  *      last, and only for versions above the document's own.
  *
- * Empty today: version 1 is the first shipped schema.
+ * Version 1 was the first shipped schema. Version 2 added the outreach module.
  */
-export const MIGRATIONS: Migration[] = []
+export const MIGRATIONS: Migration[] = [
+  {
+    to: 2,
+    describe:
+      'Add the outreach module: companies, contacts, opportunities, touches, message templates and outreach settings',
+    up(document) {
+      return {
+        ...document,
+        companies: Array.isArray(document.companies) ? document.companies : [],
+        contacts: Array.isArray(document.contacts) ? document.contacts : [],
+        opportunities: Array.isArray(document.opportunities) ? document.opportunities : [],
+        touches: Array.isArray(document.touches) ? document.touches : [],
+        templates: Array.isArray(document.templates)
+          ? document.templates
+          : DEFAULT_TEMPLATES.map((template) => ({ ...template })),
+        outreach:
+          typeof document.outreach === 'object' && document.outreach !== null
+            ? document.outreach
+            : {
+                ...DEFAULT_OUTREACH,
+                fitCriteria: DEFAULT_FIT_CRITERIA.map((criterion) => ({ ...criterion })),
+              },
+      }
+    },
+  },
+]
 
 /* -------------------------------------------------------------------------- *
  * Coercion helpers
@@ -93,6 +147,64 @@ const CLOCK_RE = /^\d{2}:\d{2}$/
 const PRIORITIES: readonly Priority[] = ['high', 'medium', 'low']
 const TASK_STATUSES: readonly TaskStatus[] = ['not-started', 'in-progress', 'completed', 'skipped']
 const GOAL_STATUSES: readonly GoalStatus[] = ['active', 'completed', 'missed', 'archived']
+const TASK_LINK_KINDS: readonly TaskLink['kind'][] = ['opportunity', 'company', 'contact']
+
+const COMPANY_KINDS: readonly CompanyKind[] = ['startup', 'scaleup', 'mnc', 'other']
+const COMPANY_SIZES: readonly CompanySize[] = ['1-10', '11-50', '51-200', '201-1000', '1000+']
+const CONTACT_WARMTHS: readonly ContactWarmth[] = ['cold', 'warm', 'referral', 'alumni']
+const OPPORTUNITY_TYPES: readonly OpportunityType[] = ['internship', 'full-time']
+const OPPORTUNITY_STAGES: readonly OpportunityStage[] = [
+  'researching',
+  'contacted',
+  'replied',
+  'applied',
+  'screening',
+  'interviewing',
+  'offer',
+  'accepted',
+  'rejected',
+  'ghosted',
+  'withdrawn',
+]
+const TERMINAL_STAGES: ReadonlySet<OpportunityStage> = new Set<OpportunityStage>([
+  'accepted',
+  'rejected',
+  'ghosted',
+  'withdrawn',
+])
+const OPPORTUNITY_SOURCES: readonly OpportunitySource[] = [
+  'cold',
+  'referral',
+  'linkedin',
+  'portal',
+  'event',
+  'inbound',
+]
+const TOUCH_CHANNELS: readonly TouchChannel[] = [
+  'email',
+  'linkedin',
+  'referral',
+  'portal',
+  'call',
+  'event',
+  'other',
+]
+const TOUCH_DIRECTIONS: readonly TouchDirection[] = ['outbound', 'inbound']
+const TOUCH_OUTCOMES: readonly TouchOutcome[] = [
+  'no-reply',
+  'replied',
+  'positive',
+  'negative',
+  'scheduled',
+]
+const TEMPLATE_CHANNELS: readonly MessageTemplate['channel'][] = ['email', 'linkedin']
+const TEMPLATE_PURPOSES: readonly TemplatePurpose[] = [
+  'cold',
+  'follow-up',
+  'referral',
+  'thank-you',
+  'connection',
+]
 
 function asRecord(value: unknown): RawRecord | null {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -143,6 +255,12 @@ function oneOf<T extends string>(value: unknown, allowed: readonly T[], fallback
     : fallback
 }
 
+function optionalOneOf<T extends string>(value: unknown, allowed: readonly T[]): T | undefined {
+  return typeof value === 'string' && (allowed as readonly string[]).includes(value)
+    ? (value as T)
+    : undefined
+}
+
 /** Accepts `YYYY-MM-DD` and full ISO instants, which get truncated to the day. */
 function isoDate(value: unknown): ISODate | null {
   if (typeof value !== 'string') return null
@@ -175,6 +293,11 @@ function clockTime(value: unknown, fallback: string): string {
   return fallback
 }
 
+function optionalClockTime(value: unknown): string | undefined {
+  const parsed = clockTime(value, '')
+  return parsed || undefined
+}
+
 function weekKey(value: unknown): string | null {
   return typeof value === 'string' && WEEK_KEY_RE.test(value.trim()) ? value.trim() : null
 }
@@ -194,9 +317,15 @@ function clampInt(value: unknown, min: number, max: number, fallback: number): n
 }
 
 function stringList(value: unknown): string[] {
-  return asArray(value)
-    .map((entry) => (typeof entry === 'string' ? entry.trim() : ''))
-    .filter((entry) => entry.length > 0)
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const entry of asArray(value)) {
+    const text = typeof entry === 'string' ? entry.trim() : ''
+    if (!text || seen.has(text)) continue
+    seen.add(text)
+    out.push(text)
+  }
+  return out
 }
 
 /** Keeps a usable id, replaces a missing or duplicate one. */
@@ -205,6 +334,27 @@ function uniqueId(value: unknown, seen: Set<string>, prefix: string): string {
   const id = candidate && !seen.has(candidate) ? candidate : uid(prefix)
   seen.add(id)
   return id
+}
+
+/** A foreign key that must point at something in `ids`, or nothing at all. */
+function reference(value: unknown, ids: ReadonlySet<string>): string | undefined {
+  const candidate = typeof value === 'string' ? value.trim() : ''
+  return candidate && ids.has(candidate) ? candidate : undefined
+}
+
+function fitValue(value: unknown): FitValue {
+  const parsed = Math.round(num(value, 0))
+  if (parsed >= 2) return 2
+  if (parsed === 1) return 1
+  return 0
+}
+
+function taskLink(value: unknown): TaskLink | undefined {
+  const record = asRecord(value)
+  if (!record) return undefined
+  const kind = optionalOneOf(record.kind, TASK_LINK_KINDS)
+  const id = optionalStr(record.id)
+  return kind && id ? { kind, id } : undefined
 }
 
 /* -------------------------------------------------------------------------- *
@@ -256,11 +406,40 @@ function normalizeTasks(value: unknown, resolveCategory: (id: unknown) => string
       completedAt: optionalTimestamp(record.completedAt),
       notes: optionalStr(record.notes),
       order: Math.round(num(record.order, tasks.length + 1)),
+      link: taskLink(record.link),
       createdAt,
       updatedAt: timestamp(record.updatedAt, createdAt),
     })
   }
   return tasks
+}
+
+interface OutreachIds {
+  companies: ReadonlySet<string>
+  contacts: ReadonlySet<string>
+  opportunities: ReadonlySet<string>
+}
+
+/**
+ * A follow-up task whose opportunity (or company, or contact) is gone keeps
+ * its text but loses the link, so the Today page never renders a dead button.
+ * Returns the same array when nothing changed.
+ */
+function pruneTaskLinks(tasks: Task[], ids: OutreachIds): Task[] {
+  let changed = false
+  const pruned = tasks.map((task) => {
+    if (!task.link) return task
+    const pool =
+      task.link.kind === 'company'
+        ? ids.companies
+        : task.link.kind === 'contact'
+          ? ids.contacts
+          : ids.opportunities
+    if (pool.has(task.link.id)) return task
+    changed = true
+    return { ...task, link: undefined }
+  })
+  return changed ? pruned : tasks
 }
 
 function normalizeLogs(value: unknown, resolveCategory: (id: unknown) => string): LogEntry[] {
@@ -492,11 +671,268 @@ export function normalizeSettings(value: unknown): PersonalSettings {
 }
 
 /* -------------------------------------------------------------------------- *
+ * Outreach normalisers (schema v2)
+ * -------------------------------------------------------------------------- */
+
+function normalizeFitCriteria(value: unknown): FitCriterion[] {
+  // Absent means "never configured" and gets the defaults; an explicit empty
+  // list is a deliberate choice and is respected.
+  if (!Array.isArray(value)) return DEFAULT_FIT_CRITERIA.map((criterion) => ({ ...criterion }))
+  const seen = new Set<string>()
+  const criteria: FitCriterion[] = []
+  for (const entry of value) {
+    const record = asRecord(entry)
+    if (!record) continue
+    const label = str(record.label).trim()
+    if (!label) continue
+    criteria.push({
+      id: uniqueId(record.id, seen, 'fit'),
+      label,
+      weight: clampInt(record.weight, 1, 5, 3),
+    })
+  }
+  return criteria
+}
+
+function normalizeFollowUpDays(value: unknown): number[] {
+  const days = new Set<number>()
+  for (const entry of asArray(value)) {
+    const parsed = Math.round(num(entry, 0))
+    if (parsed >= 1 && parsed <= 365) days.add(parsed)
+  }
+  return days.size > 0 ? [...days].sort((a, b) => a - b) : [...DEFAULT_OUTREACH.followUpDays]
+}
+
+/** Also used by `updateOutreach`, so a Settings form cannot store a nonsense target. */
+export function normalizeOutreachSettings(value: unknown): OutreachSettings {
+  const record = asRecord(value) ?? {}
+  return {
+    weeklyTarget: clampInt(record.weeklyTarget, 1, 100, DEFAULT_OUTREACH.weeklyTarget),
+    followUpDays: normalizeFollowUpDays(record.followUpDays),
+    staleAfterDays: clampInt(record.staleAfterDays, 1, 90, DEFAULT_OUTREACH.staleAfterDays),
+    fitCriteria: normalizeFitCriteria(record.fitCriteria),
+    defaultResumeVersion: optionalStr(record.defaultResumeVersion),
+  }
+}
+
+function normalizeFacts(value: unknown, fallbackStamp: string): CompanyFact[] {
+  const seen = new Set<string>()
+  const facts: CompanyFact[] = []
+  for (const entry of asArray(value)) {
+    const record = asRecord(entry)
+    if (!record) continue
+    const text = str(record.text).trim()
+    if (!text) continue
+    facts.push({
+      id: uniqueId(record.id, seen, 'fact'),
+      text,
+      sourceUrl: optionalStr(record.sourceUrl),
+      addedAt: timestamp(record.addedAt, fallbackStamp),
+    })
+  }
+  return facts
+}
+
+function normalizeFit(value: unknown, criterionIds: ReadonlySet<string>): Record<string, FitValue> {
+  const record = asRecord(value) ?? {}
+  const fit: Record<string, FitValue> = {}
+  for (const [criterionId, raw] of Object.entries(record)) {
+    // Values for criteria that no longer exist would never be read again.
+    if (!criterionIds.has(criterionId)) continue
+    fit[criterionId] = fitValue(raw)
+  }
+  return fit
+}
+
+function normalizeCompanies(value: unknown, criterionIds: ReadonlySet<string>): Company[] {
+  const seen = new Set<string>()
+  const companies: Company[] = []
+  for (const entry of asArray(value)) {
+    const record = asRecord(entry)
+    if (!record) continue
+    const name = str(record.name).trim()
+    if (!name) continue
+    const createdAt = timestamp(record.createdAt, new Date(0).toISOString())
+    companies.push({
+      id: uniqueId(record.id, seen, 'company'),
+      name,
+      website: optionalStr(record.website),
+      careersUrl: optionalStr(record.careersUrl),
+      linkedinUrl: optionalStr(record.linkedinUrl),
+      kind: oneOf(record.kind, COMPANY_KINDS, 'other'),
+      stage: optionalStr(record.stage),
+      size: optionalOneOf(record.size, COMPANY_SIZES),
+      location: optionalStr(record.location),
+      remote: bool(record.remote, false),
+      industry: optionalStr(record.industry),
+      why: optionalStr(record.why),
+      facts: normalizeFacts(record.facts, createdAt),
+      fit: normalizeFit(record.fit, criterionIds),
+      priority: oneOf(record.priority, PRIORITIES, 'medium'),
+      tags: stringList(record.tags),
+      archived: bool(record.archived, false),
+      createdAt,
+      updatedAt: timestamp(record.updatedAt, createdAt),
+    })
+  }
+  return companies
+}
+
+function normalizeContacts(value: unknown, companyIds: ReadonlySet<string>): Contact[] {
+  const seen = new Set<string>()
+  const contacts: Contact[] = []
+  for (const entry of asArray(value)) {
+    const record = asRecord(entry)
+    if (!record) continue
+    const name = str(record.name).trim()
+    if (!name) continue
+    const createdAt = timestamp(record.createdAt, new Date(0).toISOString())
+    contacts.push({
+      id: uniqueId(record.id, seen, 'contact'),
+      // A contact outlives its company; the link is simply cleared.
+      companyId: reference(record.companyId, companyIds),
+      name,
+      role: optionalStr(record.role),
+      linkedinUrl: optionalStr(record.linkedinUrl),
+      email: optionalStr(record.email),
+      warmth: oneOf(record.warmth, CONTACT_WARMTHS, 'cold'),
+      notes: optionalStr(record.notes),
+      createdAt,
+      updatedAt: timestamp(record.updatedAt, createdAt),
+    })
+  }
+  return contacts
+}
+
+function normalizeStageHistory(
+  value: unknown,
+  stage: OpportunityStage,
+  createdAt: string,
+  updatedAt: string,
+): StageChange[] {
+  const history: StageChange[] = []
+  for (const entry of asArray(value)) {
+    const record = asRecord(entry)
+    if (!record) continue
+    const changeStage = optionalOneOf(record.stage, OPPORTUNITY_STAGES)
+    if (!changeStage) continue
+    history.push({ stage: changeStage, at: timestamp(record.at, createdAt) })
+  }
+  if (history.length === 0) history.push({ stage, at: createdAt })
+  // `setOpportunityStage` always appends, so a history whose last entry is not
+  // the current stage was hand-edited or truncated. Repair it the same way.
+  if (history[history.length - 1].stage !== stage) history.push({ stage, at: updatedAt })
+  return history
+}
+
+function normalizeOpportunities(
+  value: unknown,
+  companyIds: ReadonlySet<string>,
+  contactIds: ReadonlySet<string>,
+): Opportunity[] {
+  const seen = new Set<string>()
+  const opportunities: Opportunity[] = []
+  for (const entry of asArray(value)) {
+    const record = asRecord(entry)
+    if (!record) continue
+    const title = str(record.title).trim()
+    const companyId = reference(record.companyId, companyIds)
+    // A role at a company that no longer exists has nowhere to render — drop it.
+    if (!title || !companyId) continue
+    const createdAt = timestamp(record.createdAt, new Date(0).toISOString())
+    const updatedAt = timestamp(record.updatedAt, createdAt)
+    const stage = oneOf(record.stage, OPPORTUNITY_STAGES, 'researching')
+    const terminal = TERMINAL_STAGES.has(stage)
+    opportunities.push({
+      id: uniqueId(record.id, seen, 'opp'),
+      companyId,
+      contactId: reference(record.contactId, contactIds),
+      title,
+      type: oneOf(record.type, OPPORTUNITY_TYPES, 'internship'),
+      stage,
+      source: oneOf(record.source, OPPORTUNITY_SOURCES, 'cold'),
+      jobUrl: optionalStr(record.jobUrl),
+      appliedAt: isoDate(record.appliedAt) ?? undefined,
+      nextAction: optionalStr(record.nextAction),
+      nextActionDue: isoDate(record.nextActionDue) ?? undefined,
+      priority: oneOf(record.priority, PRIORITIES, 'medium'),
+      compensation: optionalStr(record.compensation),
+      resumeVersion: optionalStr(record.resumeVersion),
+      notes: optionalStr(record.notes),
+      stageHistory: normalizeStageHistory(record.stageHistory, stage, createdAt, updatedAt),
+      // Closed exactly when terminal: stamp a missing close, clear a stale one.
+      closedAt: terminal ? (optionalTimestamp(record.closedAt) ?? updatedAt) : undefined,
+      createdAt,
+      updatedAt,
+    })
+  }
+  return opportunities
+}
+
+function normalizeTouches(value: unknown, ids: OutreachIds): Touch[] {
+  const seen = new Set<string>()
+  const touches: Touch[] = []
+  for (const entry of asArray(value)) {
+    const record = asRecord(entry)
+    if (!record) continue
+    const date = isoDate(record.date) ?? isoDate(record.createdAt)
+    if (!date) continue
+    touches.push({
+      id: uniqueId(record.id, seen, 'touch'),
+      date,
+      time: optionalClockTime(record.time),
+      channel: oneOf(record.channel, TOUCH_CHANNELS, 'other'),
+      direction: oneOf(record.direction, TOUCH_DIRECTIONS, 'outbound'),
+      companyId: reference(record.companyId, ids.companies),
+      contactId: reference(record.contactId, ids.contacts),
+      opportunityId: reference(record.opportunityId, ids.opportunities),
+      summary: str(record.summary).trim() || 'No summary',
+      // Deliberately NOT validated against the templates: response-rate history
+      // for a deleted template hangs off this id.
+      templateId: optionalStr(record.templateId),
+      outcome: optionalOneOf(record.outcome, TOUCH_OUTCOMES),
+      createdAt: timestamp(record.createdAt, `${date}T09:00:00.000Z`),
+    })
+  }
+  return touches
+}
+
+function normalizeTemplates(value: unknown): MessageTemplate[] {
+  // Same rule as fit criteria: absent gets the defaults, empty stays empty.
+  if (!Array.isArray(value)) return DEFAULT_TEMPLATES.map((template) => ({ ...template }))
+  const seen = new Set<string>()
+  const templates: MessageTemplate[] = []
+  for (const entry of value) {
+    const record = asRecord(entry)
+    if (!record) continue
+    const name = str(record.name).trim()
+    if (!name) continue
+    const createdAt = timestamp(record.createdAt, new Date(0).toISOString())
+    templates.push({
+      id: uniqueId(record.id, seen, 'tpl'),
+      name,
+      channel: oneOf(record.channel, TEMPLATE_CHANNELS, 'email'),
+      purpose: oneOf(record.purpose, TEMPLATE_PURPOSES, 'cold'),
+      subject: optionalStr(record.subject),
+      body: str(record.body),
+      archived: bool(record.archived, false),
+      createdAt,
+      updatedAt: timestamp(record.updatedAt, createdAt),
+    })
+  }
+  return templates
+}
+
+/* -------------------------------------------------------------------------- *
  * Entry point
  * -------------------------------------------------------------------------- */
 
-/** Digs the document out of a plain object, a JSON string, or an export wrapper. */
-function unwrap(raw: unknown): RawRecord | null {
+/**
+ * Digs the document out of a plain object, a JSON string, or an export
+ * wrapper. Exported so `importJson` can tell whether a backup carried a field
+ * at all, which `migrate` (by design) hides behind defaults.
+ */
+export function unwrapDocument(raw: unknown): RawRecord | null {
   let value = raw
   if (typeof value === 'string') {
     try {
@@ -529,7 +965,7 @@ function readVersion(document: RawRecord): number {
  * Accepts anything and returns a `PersonalDatabase`. Never throws.
  */
 export function migrate(raw: unknown): PersonalDatabase {
-  const source = unwrap(raw)
+  const source = unwrapDocument(raw)
   if (!source) return createEmptyDatabase()
 
   let document = source
@@ -556,10 +992,22 @@ export function migrate(raw: unknown): PersonalDatabase {
   const habits = normalizeHabits(document.habits, resolveCategory)
   const habitIds = new Set(habits.map((habit) => habit.id))
 
+  // Outreach: settings first (companies score against its criteria), then each
+  // collection in dependency order so every foreign key can be checked.
+  const outreach = normalizeOutreachSettings(document.outreach)
+  const criterionIds = new Set(outreach.fitCriteria.map((criterion) => criterion.id))
+  const companies = normalizeCompanies(document.companies, criterionIds)
+  const companyIds = new Set(companies.map((company) => company.id))
+  const contacts = normalizeContacts(document.contacts, companyIds)
+  const contactIds = new Set(contacts.map((contact) => contact.id))
+  const opportunities = normalizeOpportunities(document.opportunities, companyIds, contactIds)
+  const opportunityIds = new Set(opportunities.map((opportunity) => opportunity.id))
+  const ids: OutreachIds = { companies: companyIds, contacts: contactIds, opportunities: opportunityIds }
+
   return {
     version: DB_VERSION,
     categories,
-    tasks: normalizeTasks(document.tasks, resolveCategory),
+    tasks: pruneTaskLinks(normalizeTasks(document.tasks, resolveCategory), ids),
     logs: normalizeLogs(document.logs, resolveCategory),
     weeklyGoals: normalizeWeeklyGoals(document.weeklyGoals, resolveCategory),
     monthlyGoals: normalizeMonthlyGoals(document.monthlyGoals, resolveCategory),
@@ -569,11 +1017,17 @@ export function migrate(raw: unknown): PersonalDatabase {
     notes: normalizeNotes(document.notes),
     days: normalizeDays(document.days),
     settings: normalizeSettings(document.settings),
+    companies,
+    contacts,
+    opportunities,
+    touches: normalizeTouches(document.touches, ids),
+    templates: normalizeTemplates(document.templates),
+    outreach,
   }
 }
 
 /** True when the stored document is already at the current schema version. */
 export function isCurrentVersion(raw: unknown): boolean {
-  const source = unwrap(raw)
+  const source = unwrapDocument(raw)
   return source ? num(source.version, 0) === DB_VERSION : false
 }

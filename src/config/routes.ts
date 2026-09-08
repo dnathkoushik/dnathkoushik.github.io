@@ -26,6 +26,12 @@ export const PERSONAL_ROUTES = {
   journal: '/dashboard/journal',
   review: '/dashboard/review',
   timeline: '/dashboard/timeline',
+  outreach: '/dashboard/outreach',
+  outreachPipeline: '/dashboard/outreach/pipeline',
+  outreachCompanies: '/dashboard/outreach/companies',
+  outreachContacts: '/dashboard/outreach/contacts',
+  outreachTemplates: '/dashboard/outreach/templates',
+  outreachActivity: '/dashboard/outreach/activity',
   settings: '/dashboard/settings',
 } as const
 
@@ -64,7 +70,18 @@ export const PERSONAL_NAV: NavItem[] = [
   { label: 'Journal', href: PERSONAL_ROUTES.journal, icon: 'NotebookPen', description: 'Work log entries and notes' },
   { label: 'Weekly review', href: PERSONAL_ROUTES.review, icon: 'ClipboardList', description: 'End-of-week retrospective' },
   { label: 'Timeline', href: PERSONAL_ROUTES.timeline, icon: 'Activity', description: 'Everything you have done, by day' },
+  { label: 'Outreach', href: PERSONAL_ROUTES.outreach, icon: 'Send', description: 'Companies, contacts and the job pipeline' },
   { label: 'Settings', href: PERSONAL_ROUTES.settings, icon: 'Settings', description: 'Categories, backup, privacy lock' },
+]
+
+/** Tabs inside the Outreach module. `end` on the overview so it does not match children. */
+export const OUTREACH_NAV: NavItem[] = [
+  { label: 'Overview', href: PERSONAL_ROUTES.outreach, icon: 'LayoutDashboard', description: 'Pipeline health, follow-ups due, this week', end: true },
+  { label: 'Pipeline', href: PERSONAL_ROUTES.outreachPipeline, icon: 'Funnel', description: 'Every opportunity by stage' },
+  { label: 'Companies', href: PERSONAL_ROUTES.outreachCompanies, icon: 'Building2', description: 'Target accounts with fit scores' },
+  { label: 'Contacts', href: PERSONAL_ROUTES.outreachContacts, icon: 'Users', description: 'People, warmth, last touch' },
+  { label: 'Templates', href: PERSONAL_ROUTES.outreachTemplates, icon: 'MessageSquare', description: 'Reusable messages and their response rates' },
+  { label: 'Activity', href: PERSONAL_ROUTES.outreachActivity, icon: 'Inbox', description: 'Every touch, newest first' },
 ]
 
 /** Routes that must never be indexed. Mirrored by `public/robots.txt`. */

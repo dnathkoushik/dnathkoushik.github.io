@@ -116,7 +116,13 @@ function weeklyGoal(overrides: Partial<WeeklyGoal> = {}): WeeklyGoal {
 
 function makeDb(overrides: Partial<PersonalDatabase> = {}): PersonalDatabase {
   return {
-    version: 1,
+    version: 2,
+    companies: [],
+    contacts: [],
+    opportunities: [],
+    touches: [],
+    templates: [],
+    outreach: { weeklyTarget: 15, followUpDays: [4, 10], staleAfterDays: 10, fitCriteria: [] },
     categories: [
       { id: 'dsa', label: 'DSA', color: 1 },
       { id: 'dev', label: 'Development', color: 2 },

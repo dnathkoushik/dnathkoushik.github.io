@@ -38,6 +38,12 @@ const JournalPage = lazy(() => import('@/pages/personal/JournalPage'))
 const ReviewPage = lazy(() => import('@/pages/personal/ReviewPage'))
 const TimelinePage = lazy(() => import('@/pages/personal/TimelinePage'))
 const SettingsPage = lazy(() => import('@/pages/personal/SettingsPage'))
+const OutreachOverviewPage = lazy(() => import('@/pages/personal/outreach/OutreachOverviewPage'))
+const PipelinePage = lazy(() => import('@/pages/personal/outreach/PipelinePage'))
+const CompaniesPage = lazy(() => import('@/pages/personal/outreach/CompaniesPage'))
+const ContactsPage = lazy(() => import('@/pages/personal/outreach/ContactsPage'))
+const TemplatesPage = lazy(() => import('@/pages/personal/outreach/TemplatesPage'))
+const OutreachActivityPage = lazy(() => import('@/pages/personal/outreach/OutreachActivityPage'))
 
 export default function App() {
   return (
@@ -76,6 +82,12 @@ export default function App() {
                   <Route path="journal" element={<JournalPage />} />
                   <Route path="review" element={<ReviewPage />} />
                   <Route path="timeline" element={<TimelinePage />} />
+                  <Route path="outreach" element={<OutreachOverviewPage />} />
+                  <Route path="outreach/pipeline" element={<PipelinePage />} />
+                  <Route path="outreach/companies" element={<CompaniesPage />} />
+                  <Route path="outreach/contacts" element={<ContactsPage />} />
+                  <Route path="outreach/templates" element={<TemplatesPage />} />
+                  <Route path="outreach/activity" element={<OutreachActivityPage />} />
                   <Route path="settings" element={<SettingsPage />} />
                 </Route>
               </Routes>

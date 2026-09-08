@@ -13,6 +13,7 @@ import { Skeleton } from '@/components/ui/Skeleton'
 import { Stat } from '@/components/ui/Stat'
 import { useToast } from '@/components/ui/Toast'
 import { PrivacyNotice } from '@/components/personal/PrivacyNotice'
+import { OutreachPulse } from '@/components/outreach/OutreachPulse'
 import { useDocumentMeta } from '@/hooks/useDocumentMeta'
 import { useCategories, useSettings } from '@/hooks/personal'
 import { usePersonalData } from '@/providers/personalDataContext'
@@ -57,6 +58,7 @@ const ACTIVITY_STYLE: Record<ActivityKind, { icon: string; className: string }> 
   note: { icon: 'StickyNote', className: 'bg-surface-muted text-ink-muted' },
   review: { icon: 'ClipboardList', className: 'bg-accent-soft text-accent' },
   'day-objective': { icon: 'Crosshair', className: 'bg-surface-muted text-ink-muted' },
+  touch: { icon: 'Send', className: 'bg-info-soft text-info' },
 }
 
 const ACTIVITY_LABEL: Record<ActivityKind, string> = {
@@ -67,6 +69,7 @@ const ACTIVITY_LABEL: Record<ActivityKind, string> = {
   note: 'Note',
   review: 'Review',
   'day-objective': 'Objective',
+  touch: 'Reached out',
 }
 
 /** Score buckets for the consistency strip, from "nothing" to "a full day". */
@@ -470,6 +473,9 @@ export default function OverviewPage() {
         </section>
 
         {/* 2 — the week */}
+        {/* The job search, if there is one: follow-ups due, this week vs target. */}
+        <OutreachPulse />
+
         <section aria-labelledby="overview-week">
           <Card>
             <CardHeader

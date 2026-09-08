@@ -50,6 +50,7 @@ import {
 } from '@/utils/date'
 import type { WeekStartsOn } from '@/utils/date'
 import { percent } from '@/utils/format'
+import { touchEvents } from '@/utils/outreach'
 
 /* -------------------------------------------------------------------------- *
  * Derived shapes that are computed rather than stored, so they live with the
@@ -880,6 +881,14 @@ export function buildActivityFeed(
       },
       instantOf(meta.date, meta.updatedAt),
     )
+  }
+
+  // Outreach touches are shaped by their own module; only the ordering is ours.
+  if (!wanted || wanted.has('touch')) {
+    for (const event of touchEvents(db, { from, to })) {
+      if (!accept('touch', event.date)) continue
+      add(event, instantOf(event.date, event.timestamp))
+    }
   }
 
   ranked.sort((a, b) => {

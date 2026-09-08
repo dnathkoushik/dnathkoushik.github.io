@@ -56,7 +56,12 @@ export function hasAnyData(db: PersonalDatabase): boolean {
     db.habits.length > 0 ||
     db.notes.length > 0 ||
     db.reviews.length > 0 ||
-    db.days.length > 0
+    db.days.length > 0 ||
+    // Outreach (v2). Templates are excluded: the defaults ship with an empty DB.
+    db.companies.length > 0 ||
+    db.contacts.length > 0 ||
+    db.opportunities.length > 0 ||
+    db.touches.length > 0
   )
 }
 

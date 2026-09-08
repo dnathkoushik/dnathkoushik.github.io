@@ -32,7 +32,7 @@ export const IDB = {
  * Schema version of `PersonalDatabase`. Bump this and add a migration in
  * `services/migrations.ts` whenever the stored shape changes.
  */
-export const DB_VERSION = 1
+export const DB_VERSION = 2 // v2: outreach (companies, contacts, opportunities, touches, templates)
 
 /** Milliseconds of inactivity before a mutated database is flushed to storage. */
 export const PERSIST_DEBOUNCE_MS = 250

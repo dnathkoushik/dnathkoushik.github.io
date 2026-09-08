@@ -8,17 +8,26 @@
  */
 import type {
   Category,
+  Company,
+  CompanyFact,
+  Contact,
+  FitValue,
   Habit,
   HabitEntry,
   ISODate,
   LogEntry,
+  MessageTemplate,
   MonthKey,
   MonthlyGoal,
   Note,
+  Opportunity,
+  OpportunityStage,
+  OutreachSettings,
   PersonalDatabase,
   PersonalSettings,
   Task,
   TaskStatus,
+  Touch,
   WeekKey,
   WeeklyGoal,
   WeeklyReview,
@@ -35,6 +44,16 @@ export type MonthlyGoalInput = Draft<MonthlyGoal, 'title' | 'monthKey'>
 export type HabitInput = Draft<Habit, 'name'>
 export type NoteInput = Draft<Note, 'title'>
 export type CategoryInput = Draft<Category, 'label'>
+
+/* -- outreach ----------------------------------------------------------- */
+export type CompanyInput = Draft<Company, 'name'>
+export type ContactInput = Draft<Contact, 'name'>
+export type OpportunityInput = Draft<Opportunity, 'companyId' | 'title'>
+export type TouchInput = Draft<Touch, 'summary' | 'channel' | 'direction'>
+export type TemplateInput = Draft<MessageTemplate, 'name' | 'body'>
+
+/** Which outreach collection a CSV maps onto. */
+export type OutreachCsvKind = 'companies' | 'contacts'
 
 export type ImportMode = 'replace' | 'merge'
 
@@ -122,6 +141,71 @@ export interface PersonalActions {
   /** Refuses to remove a category that is still referenced; returns false. */
   deleteCategory(id: string): boolean
   updateSettings(patch: Partial<PersonalSettings>): void
+
+  /* -- outreach: companies ---------------------------------------------- */
+  addCompany(input: CompanyInput): Company
+  updateCompany(id: string, patch: Partial<Company>): void
+  /**
+   * Hard delete. Also removes the company's opportunities and every touch that
+   * pointed only at them; contacts are kept and unlinked. Returns what was
+   * removed so the confirm dialog can say so beforehand via `companyFootprint`.
+   */
+  deleteCompany(id: string): { opportunities: number; touches: number; contacts: number }
+  companyFootprint(id: string): { opportunities: number; touches: number; contacts: number }
+  addCompanyFact(companyId: string, text: string, sourceUrl?: string): CompanyFact
+  removeCompanyFact(companyId: string, factId: string): void
+  setCompanyFit(companyId: string, criterionId: string, value: FitValue): void
+
+  /* -- outreach: contacts ----------------------------------------------- */
+  addContact(input: ContactInput): Contact
+  updateContact(id: string, patch: Partial<Contact>): void
+  /** Touches and opportunities that pointed at the contact are unlinked, not deleted. */
+  deleteContact(id: string): void
+
+  /* -- outreach: opportunities ------------------------------------------ */
+  addOpportunity(input: OpportunityInput): Opportunity
+  updateOpportunity(id: string, patch: Partial<Opportunity>): void
+  /** Also deletes touches that pointed only at this opportunity. */
+  deleteOpportunity(id: string): void
+  /**
+   * Moves the stage, appends to `stageHistory`, stamps `closedAt` on a terminal
+   * stage (and clears it when reopened), stamps `appliedAt` when reaching
+   * 'applied' for the first time, and clears `nextAction*` on terminal stages.
+   */
+  setOpportunityStage(id: string, stage: OpportunityStage): void
+  /**
+   * Creates a real Task on `date` in the Career category, linked to the
+   * opportunity, and sets `nextAction` / `nextActionDue` on it. Returns the task.
+   */
+  scheduleFollowUp(opportunityId: string, date: ISODate, title?: string): Task
+
+  /* -- outreach: touches ------------------------------------------------ */
+  /**
+   * Logs an interaction. Side effects on a linked opportunity: an outbound
+   * touch while 'researching' moves it to 'contacted'; an inbound touch while
+   * 'researching' or 'contacted' moves it to 'replied'. Never moves it backwards
+   * and never touches terminal stages.
+   */
+  addTouch(input: TouchInput): Touch
+  updateTouch(id: string, patch: Partial<Touch>): void
+  deleteTouch(id: string): void
+
+  /* -- outreach: templates & settings ----------------------------------- */
+  addTemplate(input: TemplateInput): MessageTemplate
+  updateTemplate(id: string, patch: Partial<MessageTemplate>): void
+  /** Touches keep their `templateId` (for response-rate history); the template just goes. */
+  deleteTemplate(id: string): void
+  updateOutreach(patch: Partial<OutreachSettings>): void
+
+  /* -- outreach: import / export ---------------------------------------- */
+  /**
+   * Header-mapped CSV. Companies: name, website, kind, stage, size, location,
+   * remote, industry, why, tags, priority. Contacts: name, role, company,
+   * email, linkedin, warmth, notes ("company" is matched by name, created if
+   * missing). Duplicate names update instead of duplicating.
+   */
+  importOutreachCsv(kind: OutreachCsvKind, csv: string): Promise<ImportSummary>
+  exportOutreachCsv(kind: OutreachCsvKind): string
 
   /* -- whole-database operations ---------------------------------------- */
   /** Pretty-printed JSON of the entire private database. */

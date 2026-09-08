@@ -20,6 +20,7 @@ The two halves share a design system and a search bar, but nothing else. The pub
 - [Updating your portfolio content](#updating-your-portfolio-content)
 - [How the personal dashboard works](#how-the-personal-dashboard-works)
 - [Privacy: what is and is not private](#privacy-what-is-and-is-not-private)
+- [Outreach — a personal GTM for internships and full-time roles](#outreach--a-personal-gtm-for-internships-and-full-time-roles)
 - [The motion layer (public site only)](#the-motion-layer-public-site-only)
 - [GitHub sync — the dashboard commits itself](#github-sync--the-dashboard-commits-itself)
 - [Deploying to GitHub Pages](#deploying-to-github-pages)
@@ -59,6 +60,7 @@ The two halves share a design system and a search bar, but nothing else. The pub
 | Journal | Work-log history and freeform notes, searchable and filterable |
 | Weekly review | A retrospective, prefaced by what the data says actually happened that week |
 | Timeline | Everything you have done, newest first, grouped by day |
+| Outreach | A personal GTM for the job hunt: target companies with fit scores, contacts, a stage pipeline, every touch logged, templates that open Gmail pre-filled, follow-ups that become tasks |
 | Settings | Categories, preferences, backup/restore, GitHub sync, and the optional privacy lock |
 
 ### Throughout
@@ -323,6 +325,32 @@ GSAP core + ScrollTrigger + SplitText + ScrambleText adds roughly 75 kB gzipped 
 
 - **A canvas hands back the same context object to every `getContext()` call.** If an effect calls `WEBGL_lose_context.loseContext()` in its cleanup and then re-runs on the same element — React StrictMode in dev, hot reload — the next mount inherits a dead context. Chrome composites a lost-context canvas as *opaque white*, straight over the hero text. So the cleanup releases the program and VAO but never loses the context.
 - **A genuinely lost context (GPU reset, mobile Safari backgrounding) is hidden immediately**, giving the browser three seconds to restore it before the hero switches permanently to its CSS-gradient fallback. It never shows white.
+
+---
+
+## Outreach — a personal GTM for internships and full-time roles
+
+`/dashboard/outreach`. The same shape as a sales CRM, pointed at you as the customer. It is private data like everything else in the dashboard: it lives in your browser and, with sync on, in your private repo.
+
+| Record | What it is |
+| --- | --- |
+| **Company** | A target account. Facts with source URLs (so you know *why* you believe something), and a **fit score** — deterministic, 0–100, from criteria *you* weight in Settings → Outreach (hiring now, backend work, stack overlap, remote/India, a warm path in, …). Change a weight and every company re-scores instantly. |
+| **Contact** | A person, with warmth: cold, warm, referral or alumni. |
+| **Opportunity** | A role at a company, moving through stages: researching → contacted → replied → applied → screening → interviewing → offer → accepted / rejected / ghosted / withdrawn. |
+| **Touch** | Every interaction — email, LinkedIn, call, referral, portal, event — outbound or inbound. The unit that reply rates and weekly velocity are computed from. |
+| **Template** | A reusable message with `{{name}}`, `{{company}}`, `{{role}}`, `{{hook}}`, `{{me}}`. Four good defaults ship (cold email, follow-up, alumni referral ask, LinkedIn note). |
+
+### How a week of it goes
+
+1. **Companies** — add a target (or import a CSV of them), score its fit, add a fact or two with the URL you got it from, hit the research links (LinkedIn people search, careers page, news).
+2. **Contacts** — add the person you'll write to. **Compose** picks a template, fills the variables from the records, shows a live preview, and opens **Gmail or your mail app pre-filled** — nothing is sent from this site; there is no server. Ticking "log this touch" records it.
+3. **Pipeline** — the opportunity appears as *contacted* automatically (an outbound touch moves *researching* → *contacted*; an inbound reply moves it to *replied*). Move stages from the card menu or with ←/→; keyboard works; no drag-and-drop to fight with on a phone.
+4. **Follow-ups** — "Schedule follow-up" suggests a date from your cadence (default 4 then 10 days after the last outbound touch) and creates a **real task on your Today page**, linked back to the opportunity.
+5. **Overview** — what's due today and overdue, this week's outbound vs your weekly target, what's going stale, reply rate by channel and by template, and an 8-week velocity chart. The main dashboard Overview shows a compact version of the same.
+
+Tune the weekly target, follow-up cadence, staleness threshold and fit criteria in **Settings → Outreach**. Import/export companies and contacts as CSV from their pages; the expected columns are shown in the import dialog.
+
+Data note: this bumped the private database schema to **v2**. Existing databases and old exports migrate automatically (the new collections start empty, with the default templates and criteria).
 
 ---
 

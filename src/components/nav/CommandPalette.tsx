@@ -36,6 +36,9 @@ const KIND_LABEL: Record<SearchResultKind, string> = {
   note: 'Notes',
   review: 'Reviews',
   habit: 'Habits',
+  company: 'Companies',
+  contact: 'Contacts',
+  opportunity: 'Opportunities',
 }
 
 const KIND_ICON: Record<SearchResultKind, string> = {
@@ -50,6 +53,9 @@ const KIND_ICON: Record<SearchResultKind, string> = {
   note: 'StickyNote',
   review: 'ClipboardList',
   habit: 'Flame',
+  company: 'Building2',
+  contact: 'Users',
+  opportunity: 'Funnel',
 }
 
 /** Singular form, used as the per-row kind chip. */
@@ -65,6 +71,9 @@ const KIND_BADGE: Record<SearchResultKind, string> = {
   note: 'Note',
   review: 'Review',
   habit: 'Habit',
+  company: 'Company',
+  contact: 'Contact',
+  opportunity: 'Role',
 }
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/

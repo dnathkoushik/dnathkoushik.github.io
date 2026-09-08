@@ -55,8 +55,15 @@ export interface Task {
   notes?: string
   /** Manual sort position within its day. Lower sorts first. */
   order: number
+  /** Set when the task was created from the outreach pipeline (a follow-up). */
+  link?: TaskLink
   createdAt: Timestamp
   updatedAt: Timestamp
+}
+
+export interface TaskLink {
+  kind: 'opportunity' | 'company' | 'contact'
+  id: string
 }
 
 export interface LogEntry {
@@ -180,6 +187,178 @@ export interface PersonalSettings {
   seedDataCleared: boolean
 }
 
+/* -------------------------------------------------------------------------- *
+ * Outreach — a personal GTM pipeline for internships and full-time roles.
+ *
+ * Same shape as a sales CRM, pointed at the owner as the customer: target
+ * accounts (companies) with source-cited facts and a deterministic fit score,
+ * people at them (contacts), roles being pursued (opportunities) moving through
+ * stages, and every interaction (touches). All of it is private data.
+ * -------------------------------------------------------------------------- */
+
+export type CompanyKind = 'startup' | 'scaleup' | 'mnc' | 'other'
+export type CompanySize = '1-10' | '11-50' | '51-200' | '201-1000' | '1000+'
+
+/** One thing known about a company, and where it came from. */
+export interface CompanyFact {
+  id: string
+  text: string
+  sourceUrl?: string
+  addedAt: Timestamp
+}
+
+/** 0 = no, 1 = partly, 2 = yes — against one fit criterion. */
+export type FitValue = 0 | 1 | 2
+
+export interface FitCriterion {
+  id: string
+  label: string
+  /** 1-5. Weights are relative; the score is normalised to 0-100. */
+  weight: number
+}
+
+export interface Company {
+  id: string
+  name: string
+  website?: string
+  careersUrl?: string
+  linkedinUrl?: string
+  kind: CompanyKind
+  /** Free text, e.g. "Series A", "Public". */
+  stage?: string
+  size?: CompanySize
+  location?: string
+  remote: boolean
+  industry?: string
+  /** Why this company, in the owner's own words. */
+  why?: string
+  facts: CompanyFact[]
+  /** criterionId -> FitValue. Missing criteria count as 0. */
+  fit: Record<string, FitValue>
+  priority: Priority
+  tags: string[]
+  archived: boolean
+  createdAt: Timestamp
+  updatedAt: Timestamp
+}
+
+export type ContactWarmth = 'cold' | 'warm' | 'referral' | 'alumni'
+
+export interface Contact {
+  id: string
+  companyId?: string
+  name: string
+  role?: string
+  linkedinUrl?: string
+  email?: string
+  warmth: ContactWarmth
+  notes?: string
+  createdAt: Timestamp
+  updatedAt: Timestamp
+}
+
+export type OpportunityType = 'internship' | 'full-time'
+
+export type OpportunityStage =
+  | 'researching'
+  | 'contacted'
+  | 'replied'
+  | 'applied'
+  | 'screening'
+  | 'interviewing'
+  | 'offer'
+  | 'accepted'
+  | 'rejected'
+  | 'ghosted'
+  | 'withdrawn'
+
+export type OpportunitySource = 'cold' | 'referral' | 'linkedin' | 'portal' | 'event' | 'inbound'
+
+export interface StageChange {
+  stage: OpportunityStage
+  at: Timestamp
+}
+
+export interface Opportunity {
+  id: string
+  companyId: string
+  /** The person this is being pursued through, if any. */
+  contactId?: string
+  /** The role, e.g. "Backend Engineering Intern". */
+  title: string
+  type: OpportunityType
+  stage: OpportunityStage
+  source: OpportunitySource
+  jobUrl?: string
+  appliedAt?: ISODate
+  nextAction?: string
+  nextActionDue?: ISODate
+  priority: Priority
+  compensation?: string
+  /** Which resume variant was sent, e.g. "backend-v3". */
+  resumeVersion?: string
+  notes?: string
+  /** Every stage this has been in, oldest first. */
+  stageHistory: StageChange[]
+  /** Set when the stage becomes terminal. */
+  closedAt?: Timestamp
+  createdAt: Timestamp
+  updatedAt: Timestamp
+}
+
+export type TouchChannel = 'email' | 'linkedin' | 'referral' | 'portal' | 'call' | 'event' | 'other'
+export type TouchDirection = 'outbound' | 'inbound'
+export type TouchOutcome = 'no-reply' | 'replied' | 'positive' | 'negative' | 'scheduled'
+
+/** One interaction. The unit that response rates and velocity are computed from. */
+export interface Touch {
+  id: string
+  date: ISODate
+  time?: ClockTime
+  channel: TouchChannel
+  direction: TouchDirection
+  companyId?: string
+  contactId?: string
+  opportunityId?: string
+  /** What was said / what happened, one or two lines. */
+  summary: string
+  /** The template this outbound touch was composed from, if any. */
+  templateId?: string
+  outcome?: TouchOutcome
+  createdAt: Timestamp
+}
+
+export type TemplatePurpose = 'cold' | 'follow-up' | 'referral' | 'thank-you' | 'connection'
+
+/**
+ * A reusable message. `body` (and `subject`) may contain `{{name}}`,
+ * `{{company}}`, `{{role}}`, `{{hook}}`, `{{me}}` - rendered by
+ * `utils/templates.ts` before copying or composing.
+ */
+export interface MessageTemplate {
+  id: string
+  name: string
+  channel: 'email' | 'linkedin'
+  purpose: TemplatePurpose
+  subject?: string
+  body: string
+  archived: boolean
+  createdAt: Timestamp
+  updatedAt: Timestamp
+}
+
+export interface OutreachSettings {
+  /** Outbound touches per week that count as "on target". */
+  weeklyTarget: number
+  /** Days after an unanswered outbound touch to follow up, in order, e.g. [4, 10]. */
+  followUpDays: number[]
+  /** An open opportunity with no touch for this many days is "stale". */
+  staleAfterDays: number
+  fitCriteria: FitCriterion[]
+  /** Pre-fills the resume field on new opportunities. */
+  defaultResumeVersion?: string
+}
+
 /**
  * The complete private dataset. Persisted as one document, which keeps writes
  * atomic and makes export/import a single JSON blob. `version` drives the
@@ -198,6 +377,13 @@ export interface PersonalDatabase {
   notes: Note[]
   days: DayMeta[]
   settings: PersonalSettings
+  /* -- outreach (schema v2) --------------------------------------------- */
+  companies: Company[]
+  contacts: Contact[]
+  opportunities: Opportunity[]
+  touches: Touch[]
+  templates: MessageTemplate[]
+  outreach: OutreachSettings
 }
 
 /* -------------------------------------------------------------------------- *
@@ -212,6 +398,7 @@ export type ActivityKind =
   | 'note'
   | 'review'
   | 'day-objective'
+  | 'touch'
 
 export interface ActivityEvent {
   id: string
@@ -295,6 +482,9 @@ export type SearchResultKind =
   | 'note'
   | 'review'
   | 'habit'
+  | 'company'
+  | 'contact'
+  | 'opportunity'
 
 export interface SearchResult {
   id: string

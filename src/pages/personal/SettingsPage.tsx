@@ -11,6 +11,7 @@ import { PrivacyNotice } from '@/components/personal/PrivacyNotice'
 import { CategoryManager } from '@/components/settings/CategoryManager'
 import { DataManager } from '@/components/settings/DataManager'
 import { GithubSyncPanel } from '@/components/settings/GithubSyncPanel'
+import { OutreachSettingsPanel } from '@/components/settings/OutreachSettingsPanel'
 import { PrivacyLockPanel } from '@/components/settings/PrivacyLockPanel'
 import { Button, ButtonLink } from '@/components/ui/Button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
@@ -302,6 +303,14 @@ export default function SettingsPage() {
         description="Commit this dashboard to a GitHub repository so it survives a cleared browser and follows you between devices. Use a PRIVATE repo — a public one would publish everything you write here."
       >
         <GithubSyncPanel />
+      </Section>
+
+      <Section
+        id="settings-outreach"
+        title="Outreach"
+        description="Targets and timing for the job search, and the criteria every company's fit score is computed from. Nothing here sends anything — composing always opens your own mail client."
+      >
+        <OutreachSettingsPanel />
       </Section>
 
       <Section
